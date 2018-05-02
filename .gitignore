@@ -1,0 +1,5 @@
+/list/*.csv
+*.log
+*.pkl
+lib/models/*.pyc
+lib/utils/*.pyc
