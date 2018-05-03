@@ -2,7 +2,7 @@
 
 ![r2plus1d1](https://raw.githubusercontent.com/dutran/R2Plus1D/master/r2plus1d.png)
 
-[[project page](https://dutran.github.io/R2Plus1D/)] [[paper](https://128.84.21.199/abs/1711.11248)]
+[[project page](https://dutran.github.io/R2Plus1D/)] [[paper](https://arxiv.org/abs/1711.11248)]
 
 If you find this work helpful for your research, please cite:
 
