@@ -31,6 +31,7 @@ R2Plus1D requires the following dependencies:
 
 ## Tutorials
 We provide some basic tutorials for you to get familar with the code and tools.
+* [Installation Guide](tutorials/Installation_guide.md)
 * [Training Kinetics from scratch](tutorials/kinetics_train.md)
 * [Finetuning R(2+1)D on HMDB51](tutorials/hmdb51_finetune.md)
 * [Dense prediction](tutorials/dense_prediction.md)
