@@ -2,9 +2,9 @@ import random
 import pandas
 import os
 
-inputlist = "kinetics_train_full.csv"
-outlist ='kinetics_train_full_shuffle.csv'
-rep = 100
+inputlist = "process_data/kinetics/kinetics_train_full.csv"
+outlist ='process_data/kinetics/kinetics_train_full_shuffle.csv'
+rep = 50
 
 flist = []
 with open(inputlist, 'r') as f:
@@ -17,7 +17,7 @@ print("number of data before shuffle: {}".format(len(flist)))
 
 f2 = open(outlist, 'w')
 f2.write(header)
-for t in range(100):
+for t in range(rep):
     listlen = len(flist)
     indices = range(listlen)
     random.shuffle(indices)

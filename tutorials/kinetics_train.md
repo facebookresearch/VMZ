@@ -14,7 +14,7 @@ ffmpeg -y -ss 00:01:47.00 -t 00:00:10.00 -i kinetics/raw_video/train/-7kbO0v4hag
 
 * You also need to prepare the list files for train and validation splits. You can download the list files [here](https://www.dropbox.com/s/fyz9fec72v7gbxj/list.tar.gz). You may want to adjust them (e.g. removing some rows if some videos are missing because of the expried urls).
 
-* Since lmdb does not support shuffle during training, we take "kinetics_train_full.csv", repeat the shuffling for 100 times (as 100 epochs) and save the results in one single csv file - "kinetics_train_full_shuffle.csv". 
+* Since lmdb does not support shuffle during training, we take "kinetics_train_full.csv", repeat the shuffling for 50 times (as 50 epochs) and save the results in one single csv file - "kinetics_train_full_shuffle.csv". 
 ```
 python process_data/kinetics/shuffle_list.py
 ```
