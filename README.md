@@ -4,7 +4,7 @@
 
 [[project page](https://dutran.github.io/R2Plus1D/)] [[paper](https://arxiv.org/abs/1711.11248)]
 
-If you find this work helpful for your research, please cite:
+If you find this work helpful for your research, please cite our following paper:
 
 D. Tran, H. Wang, L. Torresani, J. Ray, Y. LeCun and M. Paluri. **A Closer Look at Spatiotemporal Convolutions for Action Recognition.** IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2018.
 
@@ -41,3 +41,6 @@ We provide some basic tutorials for you to get familar with the code and tools.
 
 ## License
 R2Plus1D is Apache 2.0 licensed, as found in the LICENSE file.
+
+### Acknowledgements
+The authors would like to thank Ahmed Taei, Aarti Basant, Aapo Kyrola, and the Facebook Caffe2 team for their help in implementing ND-convolution, in optimizing video I/O, and in providing support for distributed training. We are grateful to Joao Carreira for sharing I3D results on the Kinetics validation set.
