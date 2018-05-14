@@ -38,8 +38,8 @@ def create_video_db(
     list = pandas.read_csv(list_file)
 
     # shuffle the data frame
-    log.info('shuffling index')
-    list = list.sample(frac=1)
+    #log.info('shuffling index')
+    #list = list.sample(frac=1)
 
     # checking necessary fields of the provided csv file
     assert 'org_video' in list, \
