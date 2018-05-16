@@ -4,7 +4,8 @@ This tutorial will help you, step-by-step, how to train a video model from scrat
 
 ## Preparing data
 
-* Download the [Kinetics](https://deepmind.com/research/open-source/open-source-datasets/kinetics/) dataset.
+* Download the [Kinetics](https://deepmind.com/research/open-source/open-source-datasets/kinetics/) dataset by following the steps provided [here](https://github.com/activitynet/ActivityNet/blob/master/Crawler/Kinetics/README.md).
+
 
 * You then need to pre-process the videos into clips (of 10 seconds). The Kinetics dataset is provided with temporal segments for each video, thus you can use some tool like ffmpeg to extract the clips from the download videos. For examples:
 
