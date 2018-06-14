@@ -1,5 +1,11 @@
-# Install Caffe2, OpenCV3, FFMPEG on CentOS
+# Install Caffe2, OpenCV3, FFMPEG
 
+* [CentOS](#centos)  
+* [Ubuntu 16.04 (Test only on CPU)](#ubuntu)
+
+---
+
+# CentOS
 ## Install OpenCV 3.4.0
 
 1. Install and create a virtualenv
@@ -150,3 +156,190 @@ export PYTHONPATH=$PYTHONPATH:~/local/pytorch/build
   ```
   python -c 'from caffe2.python import core' 2>/dev/null && echo "Success" || echo "Failure"
   ```
+---
+# Ubuntu
+## Install OpenCV 3.4.0
+
+1. Update `apt-get` and pre-installed libraries
+```
+sudo apt-get update
+sudo apt-get upgrade
+```
+
+2. Install some tools
+```
+sudo apt-get install build-essential cmake pkg-config libatlas-base-dev gfortran unzip
+sudo apt-get install python2.7-dev
+sudo apt install python-pip
+```
+
+3. Setup virtualenv
+```
+sudo pip install virtualenv virtualenvwrapper
+echo -e "\n# virtualenv and virtualenvwrapper" >> ~/.bashrc
+echo "export WORKON_HOME=$HOME/.virtualenvs" >> ~/.bashrc
+echo "source /usr/local/bin/virtualenvwrapper.sh" >> ~/.bashrc
+source ~/.bashrc
+mkvirtualenv r21d -p python2
+pip install numpy 
+```
+* Note that we need to install numpy before compile OpenCV
+* Ensure you are in the correct virtual environment (e.g. `r21d`)
+4. Get OpenCV
+```
+wget https://github.com/opencv/opencv/archive/3.4.0.zip -O opencv-3.4.0.zip
+unzip opencv-3.4.0.zip
+cd opencv-3.4.0
+mkdir build && cd build
+cmake -D CMAKE_BUILD_TYPE=RELEASE \
+        -D CMAKE_INSTALL_PREFIX=/usr/local \
+        -D PYTHON_EXECUTABLE=~/.virtualenvs/r21d/bin/python \
+        -D BUILD_EXAMPLES=ON \
+	-D BUILD_SHARED_LIBS=ON ..
+make -j8
+sudo make install
+sudo ldconfig
+```
+* If you’ve reached this step without an error, OpenCV should now be installed in  
+  `/usr/local/lib/python2.7/site-packages`
+* To use OpenCV within r21d virtual environment
+  ```
+  cd ~/.virtualenvs/r21d/lib/python2.7/site-packages/
+  ln -s /usr/local/lib/python2.7/site-packages/cv2.so cv2.so
+  ```
+* To confirm your installation
+  (ensure that you are in the r21d virtual environment)
+  ``` console
+  $ python
+  >>> import cv2
+  >>> cv2.__version__
+  '3.4.0'
+  ```
+  
+## Install FFmpeg 
+
+1. Get the dependencies
+```
+sudo apt-get update -qq && sudo apt-get -y install \
+  autoconf \
+  automake \
+  build-essential \
+  cmake \
+  git-core \
+  libass-dev \
+  libfreetype6-dev \
+  libsdl2-dev \
+  libtool \
+  libva-dev \
+  libvdpau-dev \
+  libvorbis-dev \
+  libxcb1-dev \
+  libxcb-shm0-dev \
+  libxcb-xfixes0-dev \
+  pkg-config \
+  texinfo \
+  wget \
+  zlib1g-dev
+
+sudo apt-get install yasm libx264-dev
+
+```
+
+2. In your home directory make a new directory to put all of the source code into:
+```
+mkdir -p ~/ffmpeg_sources ~/bin
+```
+
+3. NASM
+```
+cd ~/ffmpeg_sources && \
+wget https://www.nasm.us/pub/nasm/releasebuilds/2.13.03/nasm-2.13.03.tar.bz2 && \
+tar xjvf nasm-2.13.03.tar.bz2 && \
+cd nasm-2.13.03 && \
+./autogen.sh && \
+PATH="$HOME/bin:$PATH" ./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin" && \
+make && \
+make install
+```
+
+4. FFmpeg
+```
+cd ~/ffmpeg_sources && \
+wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
+tar xjvf ffmpeg-snapshot.tar.bz2 && \
+cd ffmpeg && \
+PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
+  --prefix="$HOME/ffmpeg_build" \
+  --pkg-config-flags="--static" \
+  --extra-cflags="-I$HOME/ffmpeg_build/include" \
+  --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
+  --extra-libs="-lpthread -lm" \
+  --bindir="$HOME/bin" \
+  --enable-gpl \
+  --enable-libvorbis \
+  --enable-libx264 \
+  --enable-nonfree
+PATH="$HOME/bin:$PATH" 
+make -j8
+make install
+```
+* Make sure pkg config and the linker can see ffmpeg
+   ```
+   echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
+   echo "export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH" >> ~/.bashrc
+   hash -r 
+   sudo ldconfig
+   ```
+* To confirm your installation
+  ```console
+  $ ffmpeg
+  ffmpeg version N-91283-gdaf38d0 Copyright (c) 2000-2018 the FFmpeg developers
+  built with gcc 5.4.0 (Ubuntu 5.4.0-6ubuntu1~16.04.9) 20160609
+  ```
+
+## Install Caffe2
+
+1. Get the dependencies
+```
+sudo apt-get install -y \
+      libgoogle-glog-dev \
+      libgtest-dev \
+      libiomp-dev \
+      libleveldb-dev \
+      liblmdb-dev \
+      libopencv-dev \
+      libopenmpi-dev \
+      libsnappy-dev \
+      libprotobuf-dev \
+      protobuf-compiler \
+      libgflags-dev \
+      python-dev
+
+pip install lmdb flask future graphviz hypothesis jupyter matplotlib protobuf pydot python-nvd3 pyyaml requests scikit-image scipy six tornado
+```
+
+2. Build Caffe2
+* If you have a GPU, consider reference to the [steps](https://caffe2.ai/docs/getting-started.html?platform=ubuntu&configuration=compile#install-with-gpu-support). (note that we didn't test it in this tutorial)
+```
+cd ~
+git clone --recursive https://github.com/pytorch/pytorch.git
+cd pytorch && git submodule update --init
+```
+  * Modify CMakeLists.txt to make `USE_FFMPEG ON`
+  * After `cmake` (see below), check the output log, makesure `USE_OPENCV: ON` and `USE_FFMPEG: ON`
+```
+mkdir build
+cd build
+cmake ..
+sudo make -j8 install
+```
+
+```
+export PYTHONPATH=$PYTHONPATH:$HOME/pytorch/build
+```
+  
+  * To confirm your installation
+  ```
+  python -c 'from caffe2.python import core' 2>/dev/null && echo "Success" || echo "Failure"
+  ```
+  
