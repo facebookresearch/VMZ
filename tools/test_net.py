@@ -21,12 +21,14 @@ import logging
 import numpy as np
 import argparse
 
-from caffe2.python import workspace, cnn
+from caffe2.python import workspace, cnn, core
 from caffe2.python import data_parallel_model
 import models.model_builder as model_builder
 import utils.model_helper as model_helper
 import utils.model_loader as model_loader
 import utils.metric as metric
+
+from caffe2.proto import caffe2_pb2
 
 logging.basicConfig()
 log = logging.getLogger("test_net")
@@ -51,9 +53,14 @@ def Test(args):
         gpus = range(args.num_gpus)
         num_gpus = args.num_gpus
 
-    log.info("Running on GPUs: {}".format(gpus))
-
-    total_batch_size = args.batch_size * num_gpus
+    if num_gpus > 0:
+        total_batch_size = args.batch_size * num_gpus
+        log.info("Running on GPUs: {}".format(gpus))
+        log.info("total_batch_size: {}".format(total_batch_size))
+    else:
+        total_batch_size = args.batch_size
+        log.info("Running on CPU")
+        log.info("total_batch_size: {}".format(total_batch_size))
 
     # Model building functions
     def create_model_ops(model, loss_scale):
@@ -119,28 +126,55 @@ def Test(args):
             use_local_file=args.use_local_file,
         )
 
-    data_parallel_model.Parallelize_GPU(
-        test_model,
-        input_builder_fun=test_input_fn,
-        forward_pass_builder_fun=create_model_ops,
-        param_update_builder_fun=None,
-        devices=gpus,
-    )
+    if num_gpus > 0:
+        data_parallel_model.Parallelize_GPU(
+            test_model,
+            input_builder_fun=test_input_fn,
+            forward_pass_builder_fun=create_model_ops,
+            param_update_builder_fun=None,
+            devices=gpus
+        )
+    else:
+        test_model._device_type = caffe2_pb2.CPU
+        test_model._devices = [0]
+        device_opt = core.DeviceOption(test_model._device_type, 0)
+        with core.DeviceScope(device_opt):
+            # Because our loaded models are named with "gpu_x", keep the naming for now.
+            # TODO: Save model using `data_parallel_model.ExtractPredictorNet`
+            # to extract the model for "gpu_0". It also renames
+            # the input and output blobs by stripping the "gpu_x/" prefix
+            with core.NameScope("{}_{}".format("gpu", 0)):
+                test_input_fn(test_model)
+                create_model_ops(test_model, 1.0)
+
     workspace.RunNetOnce(test_model.param_init_net)
     workspace.CreateNet(test_model.net)
 
     if args.db_type == 'minidb':
-        model_helper.LoadModel(args.load_model_path, args.db_type)
+        if num_gpus > 0:
+            model_helper.LoadModel(args.load_model_path, args.db_type)
+            data_parallel_model.FinalizeAfterCheckpoint(test_model)
+        else:
+            with core.DeviceScope(core.DeviceOption(caffe2_pb2.CPU, 0)):
+                model_helper.LoadModel(args.load_model_path, args.db_type)
     elif args.db_type == 'pickle':
-        model_loader.LoadModelFromPickleFile(
-            test_model,
-            args.load_model_path,
-            root_gpu_id=gpus[0]
-        )
+        if num_gpus > 0:
+            model_loader.LoadModelFromPickleFile(
+                test_model,
+                args.load_model_path,
+                use_gpu=True,
+                root_gpu_id=gpus[0]
+            )
+            data_parallel_model.FinalizeAfterCheckpoint(test_model)
+        else:
+            model_loader.LoadModelFromPickleFile(
+                test_model,
+                args.load_model_path,
+                use_gpu=False
+            )
     else:
         log.warning("Unsupported db_type: {}".format(args.db_type))
 
-    data_parallel_model.FinalizeAfterCheckpoint(test_model)
 
     # metric counters for classification
     clip_acc = 0
@@ -151,7 +185,11 @@ def Test(args):
 
     for i in range(num_iter):
         workspace.RunNet(test_model.net.Proto().name)
-        for g in test_model._devices:
+        num_devices = 1  # default for cpu
+        if args.num_gpus > 0:
+            num_devices = args.num_gpus
+
+        for g in range(num_devices):
             # get labels
             label = workspace.FetchBlob(
                 "gpu_{}".format(g) + '/label'
@@ -197,7 +235,10 @@ def Test(args):
         video_topk / video_count
     ))
 
-    flops, params = model_helper.GetFlopsAndParams(test_model, args.gpus[0])
+    if num_gpus > 0:
+        flops, params = model_helper.GetFlopsAndParams(test_model, gpus[0])
+    else:
+        flops, params = model_helper.GetFlopsAndParams(test_model)
     log.info('FLOPs: {}, params: {}'.format(flops, params))
 
 
@@ -213,7 +254,7 @@ def main():
                         help="Model depth")
     parser.add_argument("--model_name", type=str, default='r2plus1d',
                         help="Model name")
-    parser.add_argument("--gpus", type=str, default='0',
+    parser.add_argument("--gpus", type=str, default=None,
                         help="Comma separated list of GPU devices to use")
     parser.add_argument("--num_gpus", type=int, default=1,
                         help="Number of GPU devices (instead of --gpus)")

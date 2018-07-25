@@ -69,6 +69,7 @@ def BroacastParameters(model, src_gpu, gpus):
 def LoadModelFromPickleFile(
     model,
     pkl_file,
+    use_gpu=True,
     root_gpu_id=0,
     bgr2rgb=False,
 ):
@@ -83,8 +84,13 @@ def LoadModelFromPickleFile(
     unscoped_blob_names = OrderedDict()
     for blob in model.GetAllParams():
         unscoped_blob_names[unscope_name(str(blob))] = True
+    if use_gpu:
+        device_opt = caffe2_pb2.CUDA
+    else:
+        device_opt = caffe2_pb2.CPU
+
     with core.NameScope('gpu_{}'.format(root_gpu_id)):
-        with core.DeviceScope(core.DeviceOption(caffe2_pb2.CUDA, root_gpu_id)):
+        with core.DeviceScope(core.DeviceOption(device_opt, root_gpu_id)):
             for unscoped_blob_name in unscoped_blob_names.keys():
                 scoped_blob_name = scoped_name(unscoped_blob_name)
                 if unscoped_blob_name not in blobs:
