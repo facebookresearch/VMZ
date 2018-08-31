@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import unicode_literals
 from __future__ import print_function
 
-from caffe2.python import workspace, cnn, data_parallel_model
+from caffe2.python import workspace, cnn, core, data_parallel_model
 import models.model_builder as model_builder
 import utils.model_helper as model_helper
 import utils.model_loader as model_loader
@@ -28,6 +28,8 @@ import argparse
 import os.path
 import pickle
 import sys
+
+from caffe2.proto import caffe2_pb2
 
 logging.basicConfig()
 log = logging.getLogger("feature_extractor")
@@ -46,6 +48,11 @@ def ExtractFeatures(args):
     else:
         gpus = range(args.num_gpus)
         num_gpus = args.num_gpus
+
+    if num_gpus > 0:
+        log.info("Running on GPUs: {}".format(gpus))
+    else:
+        log.info("Running on CPU")
 
     log.info("Running on GPUs: {}".format(gpus))
 
@@ -110,38 +117,62 @@ def ExtractFeatures(args):
             is_test=0,
         )
 
-    data_parallel_model.Parallelize_GPU(
-        model,
-        input_builder_fun=input_fn,
-        forward_pass_builder_fun=create_model_ops,
-        param_update_builder_fun=None,   # 'None' since we aren't training
-        devices=gpus,
-    )
+    if num_gpus > 0:
+        data_parallel_model.Parallelize_GPU(
+            model,
+            input_builder_fun=input_fn,
+            forward_pass_builder_fun=create_model_ops,
+            param_update_builder_fun=None,   # 'None' since we aren't training
+            devices=gpus,
+        )
+    else:
+        model._device_type = caffe2_pb2.CPU
+        model._devices = [0]
+        device_opt = core.DeviceOption(model._device_type, 0)
+        with core.DeviceScope(device_opt):
+            with core.NameScope("{}_{}".format("gpu", 0)):
+                input_fn(model)
+                create_model_ops(model, 1.0)
 
     workspace.RunNetOnce(model.param_init_net)
     workspace.CreateNet(model.net)
 
     if args.db_type == 'minidb':
-        model_helper.LoadModel(args.load_model_path, args.db_type)
+        if num_gpus > 0:
+            model_helper.LoadModel(args.load_model_path, args.db_type)
+            data_parallel_model.FinalizeAfterCheckpoint(model)
+        else:
+            with core.DeviceScope(core.DeviceOption(caffe2_pb2.CPU, 0)):
+                model_helper.LoadModel(args.load_model_path, args.db_type)
     elif args.db_type == 'pickle':
-        model_loader.LoadModelFromPickleFile(
-            model,
-            args.load_model_path,
-            root_gpu_id=gpus[0]
-        )
+        if num_gpus > 0:
+            model_loader.LoadModelFromPickleFile(
+                model,
+                args.load_model_path,
+                use_gpu=True,
+                root_gpu_id=gpus[0]
+            )
+        else:
+            model_loader.LoadModelFromPickleFile(
+                model,
+                args.load_model_path,
+                use_gpu=False,
+            )
     else:
         log.warning("Unsupported db_type: {}".format(args.db_type))
-
-    data_parallel_model.FinalizeAfterCheckpoint(model)
 
     def fetchActivations(model, outputs, num_iterations):
 
         all_activations = {}
         for counter in range(num_iterations):
             workspace.RunNet(model.net.Proto().name)
-            for gpuidx in model._devices:
+            num_devices = 1  # default for cpu
+            if num_gpus > 0:
+                num_devices = num_gpus
+
+            for g in range(num_devices):
                 for output_name in outputs:
-                    blob_name = 'gpu_{}/'.format(gpuidx) + output_name
+                    blob_name = 'gpu_{}/'.format(g) + output_name
                     activations = workspace.FetchBlob(blob_name)
                     if output_name not in all_activations:
                         all_activations[output_name] = []
@@ -164,7 +195,10 @@ def ExtractFeatures(args):
     if args.num_iterations > 0:
         num_iterations = args.num_iterations
     else:
-        examples_per_iteration = args.batch_size * num_gpus
+        if num_gpus > 0:
+            examples_per_iteration = args.batch_size * num_gpus
+        else:
+            examples_per_iteration = args.batch_size
         num_iterations = int(num_examples / examples_per_iteration)
 
     activations = fetchActivations(model, outputs, num_iterations)
@@ -213,8 +247,10 @@ def main():
                         help="Model name")
     parser.add_argument("--model_depth", type=int, default=18,
                         help="Model depth")
-    parser.add_argument("--gpus", type=str, default='0',
+    parser.add_argument("--gpus", type=str, default=None,
                         help="Comma separated list of GPU devices to use")
+    parser.add_argument("--num_gpus", type=int, default=1,
+                        help="Number of GPU devices (instead of --gpus)")
     parser.add_argument("--scale_h", type=int, default=128,
                         help="Scale image height to")
     parser.add_argument("--scale_w", type=int, default=171,

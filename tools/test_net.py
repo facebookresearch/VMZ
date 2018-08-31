@@ -186,8 +186,8 @@ def Test(args):
     for i in range(num_iter):
         workspace.RunNet(test_model.net.Proto().name)
         num_devices = 1  # default for cpu
-        if args.num_gpus > 0:
-            num_devices = args.num_gpus
+        if num_gpus > 0:
+            num_devices = num_gpus
 
         for g in range(num_devices):
             # get labels
