@@ -114,7 +114,7 @@ def ExtractFeatures(args):
                 else args.clip_length_rgb
             ),
             loss_scale=loss_scale,
-            is_test=0,
+            is_test=1,
         )
 
     if num_gpus > 0:
