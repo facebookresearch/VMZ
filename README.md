@@ -21,12 +21,13 @@ If you have any question or feedback about the code, please contact: trandu@fb.c
 
 ## Requirements
 R2Plus1D requires the following dependencies:
-* [Caffe2](https://caffe2.ai) and its dependencies.
 * [OpenCV](https://opencv.org) (tested on 3.4.1) and [ffmpeg](https://trac.ffmpeg.org).
+* [Caffe2](https://caffe2.ai) and its dependencies.
+  * You will need to build from source and install with `USE_OPENCV=1 USE_FFMPEG=1 USE_LMDB=1 python setup.py install` for OpenCV, ffmpeg, and lmdb support.
 * And lmdb, python-lmdb, and pandas.
 
 ## Installation
-* You need to install ffmpeg, OpenCV, and caffe2. Caffe2 installation instructions can be found [here](https://caffe2.ai/docs/getting-started.html). You also need to install lmdb, python-lmdb, and pandas.
+* You need to install ffmpeg, OpenCV, and caffe2. Caffe2 source build instructions can be found [here](https://caffe2.ai/docs/getting-started.html?configuration=compile) but make sure you install with `USE_OPENCV=1 USE_FFMPEG=1 USE_LMDB=1 python setup.py install`. You also need to install lmdb, python-lmdb, and pandas.
 
 
 ## Tutorials
