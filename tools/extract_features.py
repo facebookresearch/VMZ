@@ -167,10 +167,8 @@ def ExtractFeatures(args):
         for counter in range(num_iterations):
             workspace.RunNet(model.net.Proto().name)
             num_devices = 1  # default for cpu
-            if num_gpus > 0:
-                num_devices = num_gpus
 
-            for g in range(num_devices):
+            for g in gpus if num_gpus > 0 else range(num_devices):
                 for output_name in outputs:
                     blob_name = 'gpu_{}/'.format(g) + output_name
                     activations = workspace.FetchBlob(blob_name)
