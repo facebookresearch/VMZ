@@ -70,7 +70,7 @@ def LoadModelFromPickleFile(
     model,
     pkl_file,
     use_gpu=True,
-    root_gpu_id=0,
+    gpu_ids=[0],
     bgr2rgb=False,
 ):
 
@@ -89,30 +89,31 @@ def LoadModelFromPickleFile(
     else:
         device_opt = caffe2_pb2.CPU
 
-    with core.NameScope('gpu_{}'.format(root_gpu_id)):
-        with core.DeviceScope(core.DeviceOption(device_opt, root_gpu_id)):
-            for unscoped_blob_name in unscoped_blob_names.keys():
-                scoped_blob_name = scoped_name(unscoped_blob_name)
-                if unscoped_blob_name not in blobs:
-                    log.info('{} not found'.format(unscoped_blob_name))
-                    continue
-                if scoped_blob_name in ws_blobs:
-                    ws_blob = workspace.FetchBlob(scoped_blob_name)
-                    target_shape = ws_blob.shape
-                    if target_shape == blobs[unscoped_blob_name].shape:
-                        log.info('copying {} to {}'.format(
-                            unscoped_blob_name, scoped_blob_name))
-                        if bgr2rgb and unscoped_blob_name == 'conv1_w':
-                            feeding_blob = FlipBGR2RGB(
-                                blobs[unscoped_blob_name]
-                            )
-                        else:
-                            feeding_blob = blobs[unscoped_blob_name]
+    for gpu_id in gpu_ids:
+        with core.NameScope('gpu_{}'.format(gpu_id)):
+            with core.DeviceScope(core.DeviceOption(device_opt, gpu_id)):
+                for unscoped_blob_name in unscoped_blob_names.keys():
+                    scoped_blob_name = scoped_name(unscoped_blob_name)
+                    if unscoped_blob_name not in blobs:
+                        log.info('{} not found'.format(unscoped_blob_name))
+                        continue
+                    if scoped_blob_name in ws_blobs:
+                        ws_blob = workspace.FetchBlob(scoped_blob_name)
+                        target_shape = ws_blob.shape
+                        if target_shape == blobs[unscoped_blob_name].shape:
+                            log.info('copying {} to {}'.format(
+                                unscoped_blob_name, scoped_blob_name))
+                            if bgr2rgb and unscoped_blob_name == 'conv1_w':
+                                feeding_blob = FlipBGR2RGB(
+                                    blobs[unscoped_blob_name]
+                                )
+                            else:
+                                feeding_blob = blobs[unscoped_blob_name]
 
-                    else:
-                        log.info('found {} but blob shape do not match'.format(
-                            unscoped_blob_name))
-                    workspace.FeedBlob(
-                        scoped_blob_name,
-                        feeding_blob.astype(np.float32, copy=False)
-                    )
+                        else:
+                            log.info('found {} but blob shape do not match'.format(
+                                unscoped_blob_name))
+                        workspace.FeedBlob(
+                            scoped_blob_name,
+                            feeding_blob.astype(np.float32, copy=False)
+                        )

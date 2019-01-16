@@ -150,7 +150,7 @@ def ExtractFeatures(args):
                 model,
                 args.load_model_path,
                 use_gpu=True,
-                root_gpu_id=gpus[0]
+                gpu_ids=gpus
             )
         else:
             model_loader.LoadModelFromPickleFile(

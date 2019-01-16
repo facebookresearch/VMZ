@@ -163,7 +163,7 @@ def Test(args):
                 test_model,
                 args.load_model_path,
                 use_gpu=True,
-                root_gpu_id=gpus[0]
+                gpu_ids=gpus
             )
             data_parallel_model.FinalizeAfterCheckpoint(test_model)
         else:
