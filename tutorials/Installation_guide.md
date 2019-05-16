@@ -324,14 +324,8 @@ pip install lmdb flask future graphviz hypothesis jupyter matplotlib protobuf py
 cd ~
 git clone --recursive https://github.com/pytorch/pytorch.git
 cd pytorch && git submodule update --init
-```
-  * Modify CMakeLists.txt to make `USE_FFMPEG ON`
-  * After `cmake` (see below), check the output log, makesure `USE_OPENCV: ON` and `USE_FFMPEG: ON`
-```
-mkdir build
-cd build
-cmake ..
-sudo make -j8 install
+
+USE_OPENCV=1 USE_FFMPEG=1 USE_LMDB=1 python setup.py install
 ```
 
 ```
