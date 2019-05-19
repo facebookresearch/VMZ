@@ -348,7 +348,7 @@ def Train(args):
             model_loader.LoadModelFromPickleFile(
                 train_model,
                 args.pretrained_model,
-                root_gpu_id=gpus[0]
+                gpu_ids=gpus
             )
 
         data_parallel_model.FinalizeAfterCheckpoint(
