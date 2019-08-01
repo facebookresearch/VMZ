@@ -5,7 +5,7 @@ The evaluation metrics are top-1 and top-5 video-level accuracy on Kinetics-400 
 ### C3D
 | Input size | Pre-trained dataset | Pre-trained model  | Video@1 | Video@5 | Finetuned model | GFLOPs | params(M) |
 | -----------| ----------- |-----   | ------- | ------- | -------- | -----   | --------- |
-| 16x112x112 | None        | None   | TBD | TBD | [link](https://www.dropbox.com/s/z6w799mqet65mkq/c3d_kinetics_from_scratch_f129282105.pkl?dl=0) | TBD | TBD |
+| 16x112x112 | None        | None   | 66.6 | 86.7 | [link](https://www.dropbox.com/s/z6w799mqet65mkq/c3d_kinetics_from_scratch_f129282105.pkl?dl=0) | 38.5 | 64.9 |
 | 16x112x112 | Sports1M    | link   | TBD | TBD | link | TBD | TBD |
 
 ### R(2+1)D-34
