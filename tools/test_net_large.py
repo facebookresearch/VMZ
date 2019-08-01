@@ -33,7 +33,7 @@ from caffe2.proto import caffe2_pb2
 
 
 logging.basicConfig()
-log = logging.getLogger("test_net")
+log = logging.getLogger("test_net_large")
 log.setLevel(logging.INFO)
 
 
@@ -48,6 +48,7 @@ def PredictionAggregation(preds, method):
 
 
 def Test(args):
+    assert args.batch_size == 1  # large testing assume batch size one
     if args.gpus is not None:
         gpus = [int(x) for x in args.gpus.split(',')]
         num_gpus = len(gpus)
@@ -104,7 +105,7 @@ def Test(args):
             model_name=args.model_name,
             model_depth=args.model_depth,
             num_labels=args.num_labels,
-            batch_size=args.batch_size * args.clip_per_video * args.crop_per_clip,
+            batch_size=args.batch_size * args.clip_per_video,
             num_channels=args.num_channels,
             crop_size=args.crop_size,
             clip_length=(
@@ -124,15 +125,23 @@ def Test(args):
             use_pool1=args.use_pool1,
         )
 
+    def empty_function(model, loss_scale=1):
+        # null
+        return
+
+    test_data_loader = cnn.CNNModelHelper(
+        order="NCHW",
+        name="data_loader",
+    )
     test_model = cnn.CNNModelHelper(
         order="NCHW",
-        name="video_model_test",
+        name="video_model",
         use_cudnn=(True if args.use_cudnn == 1 else False),
         cudnn_exhaustive_search=True,
     )
 
     test_reader, number_of_examples = reader_utils.create_data_reader(
-        test_model, **reader_args
+        test_data_loader, **reader_args
     )
 
     if args.num_iter <= 0:
@@ -142,15 +151,23 @@ def Test(args):
 
     def test_input_fn(model):
         model_helper.AddVideoInput(
-            test_model,
+            test_data_loader,
             test_reader,
             **video_input_args
         )
 
     if num_gpus > 0:
         data_parallel_model.Parallelize_GPU(
-            test_model,
+            test_data_loader,
             input_builder_fun=test_input_fn,
+            forward_pass_builder_fun=empty_function,
+            param_update_builder_fun=None,
+            devices=gpus,
+            optimize_gradient_memory=True,
+        )
+        data_parallel_model.Parallelize_GPU(
+            test_model,
+            input_builder_fun=empty_function,
             forward_pass_builder_fun=create_model_ops,
             param_update_builder_fun=None,
             devices=gpus,
@@ -161,14 +178,17 @@ def Test(args):
         test_model._devices = [0]
         device_opt = core.DeviceOption(test_model._device_type, 0)
         with core.DeviceScope(device_opt):
-            # Because our loaded models are named with "gpu_x", keep the naming for now.
+            # Because our loaded models are named with "gpu_x",
+            # keep the naming for now.
             # TODO: Save model using `data_parallel_model.ExtractPredictorNet`
             # to extract the model for "gpu_0". It also renames
             # the input and output blobs by stripping the "gpu_x/" prefix
             with core.NameScope("{}_{}".format("gpu", 0)):
-                test_input_fn(test_model)
+                test_input_fn(test_data_loader)
                 create_model_ops(test_model, 1.0)
 
+    workspace.RunNetOnce(test_data_loader.param_init_net)
+    workspace.CreateNet(test_data_loader.net)
     workspace.RunNetOnce(test_model.param_init_net)
     workspace.CreateNet(test_model.net)
 
@@ -207,64 +227,114 @@ def Test(args):
     video_topk = 0
     video_count = 0
     clip_count = 0
-    crop_per_video = args.clip_per_video * args.crop_per_clip
-    for i in range(num_iter):
-        workspace.RunNet(test_model.net.Proto().name)
 
-        num_devices = 1  # default for cpu
-        if num_gpus > 0:
-            num_devices = num_gpus
+    num_devices = 1  # default for cpu
+    if num_gpus > 0:
+        num_devices = num_gpus
+    # actual_batch_size
+    inference_batch_size = args.crop_per_inference
+    num_crop_per_bag = args.clip_per_video * args.crop_per_clip
+    # make sure you do your math correctly
+    assert num_crop_per_bag % num_crop_per_bag == 0
+    num_slice = int(num_crop_per_bag / inference_batch_size)
+
+    for i in range(num_iter):
+        # load one batch of data assume 1 video
+        # which is (#clips x #crops) x 3 x crop_size x crop_size
+        workspace.RunNet(test_data_loader.net.Proto().name)
+
+        # get all data into a list, each per device (gpu)
+        video_data = []
+        label_data = []
+        all_predicts = []
+        for g in range(num_devices):
+            data = workspace.FetchBlob("gpu_{}".format(gpus[g]) + '/data')
+            video_data.append(data)
+            label = workspace.FetchBlob("gpu_{}".format(gpus[g]) + '/label')
+            label_data.append(label)
+            all_predicts.append([])
+
+        for slice in range(num_slice):
+            for g in range(num_devices):
+                data = video_data[g][
+                    slice * inference_batch_size :
+                    (slice + 1) * inference_batch_size,
+                    :, :, :, :
+                ]
+                if args.multi_label:
+                    label = label_data[g][
+                        slice * inference_batch_size :
+                        (slice + 1) * inference_batch_size,
+                        :
+                    ]
+                else:
+                    label = label_data[g][
+                        slice * inference_batch_size :
+                        (slice + 1) * inference_batch_size
+                    ]
+                workspace.FeedBlob("gpu_{}".format(gpus[g]) + '/data', data)
+                workspace.FeedBlob("gpu_{}".format(gpus[g]) + '/label', label)
+
+            # do one iteration of inference over one slice across devices
+            workspace.RunNet(test_model.net.Proto().name)
+
+            for g in range(num_devices):
+                # get predictions
+                if args.multi_label:
+                    predicts = workspace.FetchBlob(
+                        "gpu_{}".format(gpus[g]) + '/prob'
+                    )
+                else:
+                    predicts = workspace.FetchBlob(
+                        "gpu_{}".format(gpus[g]) + '/softmax'
+                    )
+
+                assert predicts.shape[0] == inference_batch_size
+
+                # accumulate predictions
+                if all_predicts[g] == []:
+                    all_predicts[g] = predicts
+                else:
+                    all_predicts[g] = np.concatenate(
+                        (all_predicts[g], predicts), axis=0
+                    )
 
         for g in range(num_devices):
-            # get labels
-            label = workspace.FetchBlob("gpu_{}".format(g) + '/label')
-            # get predictions
+            # get clip accuracy
+            predicts = all_predicts[g]
             if args.multi_label:
-                predicts = workspace.FetchBlob("gpu_{}".format(g) + '/prob')
+                sample_label = label_data[g][0, :]
             else:
-                predicts = workspace.FetchBlob("gpu_{}".format(g) + '/softmax')
-            assert predicts.shape[0] == args.batch_size * crop_per_video
+                sample_label = label_data[g][0]
+            for k in range(num_crop_per_bag):
+                sorted_preds = np.argsort(predicts[k, :])
+                sorted_preds[:] = sorted_preds[::-1]
+                if sorted_preds[0] == sample_label:
+                    clip_acc = clip_acc + 1
 
-            for j in range(args.batch_size):
-                # get label for one video
-                if args.multi_label:
-                    sample_label = label[j * crop_per_video, :]
-                else:
-                    sample_label = label[j * crop_per_video]
-                    # get clip accuracy
-                    for k in range(crop_per_video):
-                        sorted_preds = \
-                            np.argsort(predicts[j * crop_per_video + k, :])
-                        sorted_preds[:] = sorted_preds[::-1]
-                        if sorted_preds[0] == label[j * crop_per_video + k]:
-                            clip_acc = clip_acc + 1
-                # get all clip predictions for one video
-                all_clips = \
-                    predicts[
-                        j * crop_per_video:(j + 1) * crop_per_video, :
-                    ]
-                # aggregate predictions into one
-                video_pred = PredictionAggregation(all_clips, args.aggregation)
+            # since batch_size == 1
+            all_clips = predicts
+            # aggregate predictions into one
+            video_pred = PredictionAggregation(all_clips, args.aggregation)
+            if args.multi_label:
+                video_pred = np.expand_dims(video_pred, axis=0)
+                sample_label = np.expand_dims(sample_label, axis=0)
+                all_prob_for_map = np.concatenate(
+                    (all_prob_for_map, video_pred), axis=0
+                )
+                all_label_for_map = np.concatenate(
+                    (all_label_for_map, sample_label), axis=0
+                )
+            else:
+                sorted_video_pred = np.argsort(video_pred)
+                sorted_video_pred[:] = sorted_video_pred[::-1]
+                if sorted_video_pred[0] == sample_label:
+                    video_top1 = video_top1 + 1
+                if sample_label in sorted_video_pred[0:args.top_k]:
+                    video_topk = video_topk + 1
 
-                if args.multi_label:
-                    video_pred = np.expand_dims(video_pred, axis=0)
-                    sample_label = np.expand_dims(sample_label, axis=0)
-                    all_prob_for_map = np.concatenate(
-                        (all_prob_for_map, video_pred), axis=0
-                    )
-                    all_label_for_map = np.concatenate(
-                        (all_label_for_map, sample_label), axis=0
-                    )
-                else:
-                    sorted_video_pred = np.argsort(video_pred)
-                    sorted_video_pred[:] = sorted_video_pred[::-1]
-                    if sorted_video_pred[0] == sample_label:
-                        video_top1 = video_top1 + 1
-                    if sample_label in sorted_video_pred[0:args.top_k]:
-                        video_topk = video_topk + 1
-
-            video_count = video_count + args.batch_size
-            clip_count = clip_count + label.shape[0]
+        video_count = video_count + num_devices
+        clip_count = clip_count + num_devices * num_crop_per_bag
 
         if i > 0 and i % args.display_iter == 0:
             if args.multi_label:
@@ -314,7 +384,7 @@ def Test(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Test net tool"
+        description="Tool for testing large networks"
     )
     parser.add_argument("--test_data", type=str, default=None,
                         help="Path to test data")
@@ -344,7 +414,7 @@ def main():
                         help="Number of labels")
     parser.add_argument("--num_channels", type=int, default=3,
                         help="Number of channels")
-    parser.add_argument("--batch_size", type=int, default=6,
+    parser.add_argument("--batch_size", type=int, default=1,
                         help="Batch size, total over all GPUs")
     parser.add_argument("--clip_per_video", type=int, default=10,
                         help="Number of clips to be sampled from a video")
@@ -400,6 +470,9 @@ def main():
                         help="use local file")
     parser.add_argument("--crop_per_clip", type=int, default=1,
                         help="number of spatial crops per clip")
+    parser.add_argument("--crop_per_inference", type=int, default=1,
+                       help="number of spatial crops GPU memory can handle"
+                       + "per one pass of inference")
 
     args = parser.parse_args()
 

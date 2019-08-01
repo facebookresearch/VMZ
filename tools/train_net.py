@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: sync with latest workflow features (Deepti or Du should have a look)
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -28,6 +30,8 @@ import caffe2.python.predictor.predictor_exporter as pred_exp
 import models.model_builder as model_builder
 import utils.model_helper as model_helper
 import utils.model_loader as model_loader
+from utils import reader_utils
+from utils import metric
 
 # Logger
 log = logging.getLogger("train_net")
@@ -77,8 +81,7 @@ def SaveModel(args, train_model, epoch):
             prefix + "/softmax": (1, args.num_labels),
             prefix + "/data": (
                 args.num_channels,
-                args.clip_length_of if args.input_type
-                else args.clip_length_rgb,
+                args.clip_length_of if args.input_type else args.clip_length_rgb,
                 args.crop_size,
                 args.crop_size
             )
@@ -88,7 +91,7 @@ def SaveModel(args, train_model, epoch):
     # save the train_model for the current epoch
     model_path = "%s/%s_%d.mdl" % (
         args.file_store_path,
-        args.model_name,
+        args.save_model_name,
         epoch,
     )
 
@@ -110,10 +113,11 @@ def RunEpoch(
     expname,
     explog,
 ):
-
     log.info("Starting epoch {}/{}".format(epoch, args.num_epochs))
     epoch_iters = int(args.epoch_size / batch_size / num_shards)
-
+    if args.multi_label:
+        accumulated_prob = np.empty(shape=[0, args.num_labels], dtype=np.float)
+        accumulated_label = np.empty(shape=[0, args.num_labels], dtype=np.int32)
     for i in range(epoch_iters):
         # This timeout is required (temporarily) since CUDA-NCCL
         # operators might deadlock when synchronizing between GPUs.
@@ -123,48 +127,94 @@ def RunEpoch(
             workspace.RunNet(train_model.net.Proto().name)
             t2 = time.time()
             dt = t2 - t1
+        if args.multi_label:
+            prefix = "gpu_{}".format(train_model._devices[0])
+            prob = workspace.FetchBlob(prefix + '/prob')
+            label = workspace.FetchBlob(prefix + '/label')
+            accumulated_prob = np.concatenate((accumulated_prob, prob), axis=0)
+            accumulated_label = np.concatenate(
+                (accumulated_label, label), axis=0
+            )
 
         if i % args.display_iter == 0:
             fmt = "Finished iteration {}/{} of epoch {} ({:.2f} clips/sec)"
             log.info(fmt.format(i, epoch_iters, epoch, batch_size / dt))
             prefix = "gpu_{}".format(train_model._devices[0])
             loss = workspace.FetchBlob(prefix + '/loss')
-            accuracy = workspace.FetchBlob(prefix + '/accuracy')
-            learning_rate = workspace.FetchBlob(prefix + '/LR')
-            train_msg = "Training loss: {}, lr: {}, accuracy: {}".format(
-                loss, learning_rate, accuracy
-            )
+            if args.multi_label:
+                mean_auc, mean_ap, _, _ = \
+                    metric.mean_ap_metric(accumulated_prob, accumulated_label)
+                train_msg = \
+                    "Training loss: {}, AUC: {}, mAP: {}".format(
+                        np.mean(loss), mean_auc, mean_ap
+                    )
+                if accumulated_label.shape[0] > 4096:
+                    accumulated_prob = accumulated_prob[-4096:, :]
+                    accumulated_label = accumulated_label[-4096:, :]
+            else:
+                accuracy = workspace.FetchBlob(prefix + '/accuracy')
+                train_msg = "Training loss: {}, accuracy: {}".format(
+                    loss, accuracy
+                )
+
             log.info(train_msg)
 
     num_clips = epoch * epoch_iters * batch_size
     prefix = "gpu_{}".format(train_model._devices[0])
     loss = workspace.FetchBlob(prefix + '/loss')
     learning_rate = workspace.FetchBlob(prefix + '/LR')
+    if args.multi_label:
+        accuracy = -1
+        loss = np.mean(loss)
+    else:
+        mean_ap = -1
+        mean_auc = -1
     if (test_model is not None):
         # Run 100 iters of testing
         ntests = 0
         test_accuracy = 0
+        test_mean_auc = 0
+        test_mean_ap = 0
+        all_prob = np.empty(shape=[0, args.num_labels], dtype=np.float)
+        all_label = np.empty(shape=[0, args.num_labels], dtype=np.int32)
         for _ in range(0, 100):
             workspace.RunNet(test_model.net.Proto().name)
             for g in test_model._devices:
                 prefix = "gpu_{}".format(g)
-                accuracy = workspace.FetchBlob(prefix + '/accuracy')
-                test_accuracy += np.asscalar(accuracy)
+                if args.multi_label:
+                    prob = workspace.FetchBlob(prefix + '/prob')
+                    label = workspace.FetchBlob(prefix + '/label')
+                    all_prob = np.concatenate((all_prob, prob), axis=0)
+                    all_label = np.concatenate((all_label, label), axis=0)
+                else:
+                    accuracy = workspace.FetchBlob(prefix + '/accuracy')
+                    test_accuracy += np.asscalar(accuracy)
                 ntests += 1
-        test_accuracy /= ntests
-        log.info("Test accuracy: {}".format(test_accuracy))
+        if args.multi_label:
+            test_mean_auc, test_mean_ap, _, _ = \
+                metric.mean_ap_metric(all_prob, all_label)
+            log.info("Test AUC: {}, mAP: {}".format(mean_auc, mean_ap))
+        else:
+            test_accuracy /= ntests
+            log.info("Test accuracy: {}".format(test_accuracy))
     else:
         test_accuracy = (-1)
+        test_mean_auc = (-1)
+        test_mean_ap = (-1)
 
     explog.log(
         input_count=num_clips,
         batch_count=(i + epoch * epoch_iters),
         additional_values={
             'accuracy': accuracy,
+            'train_AUC': mean_auc,
+            'train_mAP': mean_ap,
             'loss': loss,
             'learning_rate': learning_rate,
             'epoch': epoch,
             'test_accuracy': test_accuracy,
+            'test_mean_auc': test_mean_auc,
+            'test_mean_ap': test_mean_ap,
         }
     )
     assert loss < 40, "Exploded gradients :("
@@ -207,6 +257,7 @@ def Train(args):
             model_name=args.model_name,
             model_depth=args.model_depth,
             num_labels=args.num_labels,
+            batch_size=args.batch_size,
             num_channels=args.num_channels,
             crop_size=args.crop_size,
             clip_length=(
@@ -215,6 +266,13 @@ def Train(args):
             ),
             loss_scale=loss_scale,
             pred_layer_name=args.pred_layer_name,
+            multi_label=args.multi_label,
+            channel_multiplier=args.channel_multiplier,
+            bottleneck_multiplier=args.bottleneck_multiplier,
+            use_dropout=args.use_dropout,
+            conv1_temporal_stride=args.conv1_temporal_stride,
+            conv1_temporal_kernel=args.conv1_temporal_kernel,
+            use_pool1=args.use_pool1,
         )
 
     # SGD
@@ -233,12 +291,12 @@ def Train(args):
         AddMomentumParameterUpdate(model, LR)
 
     # Input. Note that the reader must be shared with all GPUS.
-    train_reader, train_examples = model_builder.create_data_reader(
+    train_reader, train_examples = reader_utils.create_data_reader(
         train_model,
         name="train_reader",
         input_data=args.train_data,
     )
-    log.info("train set has {} examples".format(train_examples))
+    log.info("Training set has {} examples".format(train_examples))
 
     def add_video_input(model):
         model_helper.AddVideoInput(
@@ -253,7 +311,10 @@ def Train(args):
             scale_h=args.scale_h,
             scale_w=args.scale_w,
             crop_size=args.crop_size,
+            video_res_type=args.video_res_type,
+            short_edge=min(args.scale_h, args.scale_w),
             num_decode_threads=args.num_decode_threads,
+            do_multi_label=args.multi_label,
             num_of_class=args.num_labels,
             random_crop=True,
             input_type=args.input_type,
@@ -265,6 +326,7 @@ def Train(args):
             get_rgb=(args.input_type == 0),
             get_optical_flow=(args.input_type == 1),
             get_video_id=args.get_video_id,
+            jitter_scales=[int(n) for n in args.jitter_scales.split(',')],
             use_local_file=args.use_local_file,
         )
 
@@ -276,8 +338,8 @@ def Train(args):
         param_update_builder_fun=add_parameter_update_ops,
         devices=gpus,
         rendezvous=None,
-        optimize_gradient_memory=True,
         net_type=('prof_dag' if args.profiling == 1 else 'dag'),
+        optimize_gradient_memory=True,
     )
 
     # Add test model, if specified
@@ -291,12 +353,13 @@ def Train(args):
             cudnn_exhaustive_search=True
         )
 
-        test_reader, test_examples = model_builder.create_data_reader(
+        test_reader, test_examples = reader_utils.create_data_reader(
             test_model,
             name="test_reader",
             input_data=args.test_data,
         )
-        log.info('test set has {} examples'.format(test_examples))
+
+        log.info("Testing set has {} examples".format(test_examples))
 
         def test_input_fn(model):
             model_helper.AddVideoInput(
@@ -312,7 +375,10 @@ def Train(args):
                 scale_h=args.scale_h,
                 scale_w=args.scale_w,
                 crop_size=args.crop_size,
+                video_res_type=args.video_res_type,
+                short_edge=min(args.scale_h, args.scale_w),
                 num_decode_threads=args.num_decode_threads,
+                do_multi_label=args.multi_label,
                 num_of_class=args.num_labels,
                 input_type=args.input_type,
                 length_of=args.clip_length_of,
@@ -332,6 +398,7 @@ def Train(args):
             forward_pass_builder_fun=create_model_ops,
             param_update_builder_fun=None,
             devices=gpus,
+            optimize_gradient_memory=True,
         )
         workspace.RunNetOnce(test_model.param_init_net)
         workspace.CreateNet(test_model.net)
@@ -341,16 +408,19 @@ def Train(args):
 
     epoch = 0
     # load the pre-trained model and reset epoch
-    if args.pretrained_model is not None:
-        if args.db_type == 'minidb':
-            model_helper.LoadModel(args.pretrained_model, args.db_type)
-        elif args.db_type == 'pickle':
+    if args.load_model_path is not None:
+        if args.db_type == 'pickle':
             model_loader.LoadModelFromPickleFile(
                 train_model,
-                args.pretrained_model,
+                args.load_model_path,
+                use_gpu=True,
                 root_gpu_id=gpus[0]
             )
-
+        else:
+            model_helper.LoadModel(
+                args.load_model_path, args.db_type
+            )
+        # Sync the model params
         data_parallel_model.FinalizeAfterCheckpoint(
             train_model,
             GetCheckpointParams(train_model),
@@ -359,7 +429,7 @@ def Train(args):
         if args.is_checkpoint:
             # reset epoch. load_model_path should end with *_X.mdl,
             # where X is the epoch number
-            last_str = args.pretrained_model.split('_')[-1]
+            last_str = args.load_model_path.split('_')[-1]
             if last_str.endswith('.mdl'):
                 epoch = int(last_str[:-4])
                 log.info("Reset epoch to {}".format(epoch))
@@ -435,13 +505,12 @@ def main():
     parser.add_argument("--frame_gap_of", type=int, default=2,
                         help="")
     parser.add_argument("--input_type", type=int, default=0,
-                        help="0: rgb, 1: optical flow")
+                        help="False=rgb, True=optical flow")
     parser.add_argument("--flow_data_type", type=int, default=0,
-                        help="0: Flow2C, 1: Flow3C, 2: FlowWithGray, " +
-                        "3: FlowWithRGB")
+                        help="0=Flow2C, 1=Flow3C, 2=FlowWithGray, 3=FlowWithRGB")
     parser.add_argument("--do_flow_aggregation", type=int, default=0,
-                        help="whether to aggregate optical flow across " +
-                        "multiple frames")
+                        help="whether to aggregate optical flow across "
+                        + "multiple frames")
     parser.add_argument("--get_video_id", type=int, default=0,
                         help="Output video id")
     parser.add_argument("--batch_size", type=int, default=32,
@@ -462,26 +531,42 @@ def main():
                         help="Weight decay (L2 regularization)")
     parser.add_argument("--cudnn_workspace_limit_mb", type=int, default=64,
                         help="CuDNN workspace limit in MBs")
-    parser.add_argument("--file_store_path", type=str, default=".",
+    parser.add_argument("--file_store_path", type=str, default="/tmp",
                         help="Path to directory to use for saving checkpoints")
-    parser.add_argument("--pretrained_model", type=str, default=None,
-                        help="Load saved model to continue training" +
-                        "if is_checkpoint = 1" +
-                        "Load pretrained model for finetuning" +
-                        "if is_checkpoint = 0.")
-    parser.add_argument("--is_checkpoint", type=int, default=1,
-                        help="0: pretrained_model is used as initalization" +
-                        "1: pretrained_model is used as a checkpoint")
+    parser.add_argument("--save_model_name", type=str, default="simple_c3d",
+                        help="Save the trained model to a given name")
+    parser.add_argument("--load_model_path", type=str, default=None,
+                        help="Load previously saved model to continue training")
     parser.add_argument("--use_cudnn", type=int, default=1,
                         help="Use CuDNN")
     parser.add_argument("--profiling", type=int, default=0,
                         help="Profile training time")
     parser.add_argument("--pred_layer_name", type=str, default=None,
                         help="the prediction layer name")
+    parser.add_argument("--multi_label", type=int, default=0,
+                        help="Multiple label training")
+    parser.add_argument("--channel_multiplier", type=float, default=1.0,
+                        help="Channel multiplier")
+    parser.add_argument("--bottleneck_multiplier", type=float, default=1.0,
+                        help="Bottleneck multiplier")
     parser.add_argument("--use_dropout", type=int, default=0,
                         help="Use dropout at the prediction layer")
+    parser.add_argument("--conv1_temporal_stride", type=int, default=1,
+                        help="Conv1 temporal striding")
+    parser.add_argument("--conv1_temporal_kernel", type=int, default=3,
+                        help="Conv1 temporal kernel")
+    parser.add_argument("--video_res_type", type=int, default=0,
+                        help="Video frame scaling option, 0: scaled by "
+                        + "height x width; 1: scaled by short edge")
+    parser.add_argument("--use_pool1", type=int, default=0,
+                        help="use pool1 layer")
+    parser.add_argument("--jitter_scales", type=str, default=None, required=True,
+                        help="spatial scales jitter, separated by commas")
     parser.add_argument("--use_local_file", type=int, default=0,
-                        help="Use lmdb as a list of local filenames")
+                        help="use local file")
+    parser.add_argument("--is_checkpoint", type=int, default=1,
+                        help="0: pretrained_model is used as initalization"
+                        + "1: pretrained_model is used as a checkpoint")
     args = parser.parse_args()
 
     log.info(args)

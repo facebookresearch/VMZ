@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import lmdb
 import pandas
 import sys
@@ -36,7 +38,6 @@ def create_video_db(
 
     # read csv list file
     list = pandas.read_csv(list_file)
-
 
     # checking necessary fields of the provided csv file
     assert 'org_video' in list, \
@@ -121,17 +122,17 @@ def main():
     parser.add_argument("--output_file", type=str, default=None,
                         help="Path to output lmdb data")
     parser.add_argument("--use_list", type=int, default=0,
-                        help="0: write video encoded data to lmdb, " +
-                        "1: write only full path to local video files")
+                        help="0: write video encoded data to lmdb, "
+                        + "1: write only full path to local video files")
     parser.add_argument("--use_video_id", type=int, default=0,
-                        help="0: does not use video_id, " +
-                        "1: write also video_id to lmdb")
+                        help="0: does not use video_id, "
+                        + "1: write also video_id to lmdb")
     parser.add_argument("--use_start_frame", type=int, default=0,
-                        help="0: does not use start_frame, " +
-                        "1: write also start_frame to lmdb")
+                        help="0: does not use start_frame, "
+                        + "1: write also start_frame to lmdb")
     parser.add_argument("--num_epochs", type=int, default=1,
-                        help="Due to lmdb does not allow online shuffle" +
-                        "we can write multiple shuffled list")
+                        help="Due to lmdb does not allow online shuffle"
+                        + "we can write multiple shuffled list")
     args = parser.parse_args()
     create_video_db(
         args.list_file,

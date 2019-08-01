@@ -117,8 +117,8 @@ def main():
     parser.add_argument("--output_clip_accuracy", type=int, default=1,
                         help="Turn this on to evaluate clip accuracy")
     parser.add_argument("--max_clip", type=int, default=0,
-                        help="0: for all clip, >0: for max_clip to select " +
-                        "from each video")
+                        help="0: for all clip, >0: for max_clip to select "
+                        + "from each video")
 
     args = parser.parse_args()
     evaluate_dense_prediction(

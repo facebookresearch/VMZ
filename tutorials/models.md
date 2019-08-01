@@ -1,4 +1,4 @@
-# Tutorial 5: Download and evaluate pre-trained models
+# Download and evaluate pre-trained models
 
 We release various pre-trained models with the hope that they will help to reproduce results and facilitate research experiments in video modeling. * Pre-trained models can be downloaded [here](https://www.dropbox.com/sh/ofdd6ia32eo4wk5/AAA8553of0M2tQVlfR0S2GTFa). More details about these models are below:
 
@@ -44,7 +44,7 @@ This will give you the result shown in the first row of the table. We also provi
 | R2.5D-34 | 32x112x112 | Optical Flow | Sports1M+Kinetics  | 55.9   | 68.2    | 88    | [link](https://www.dropbox.com/s/30zj1t9xte5vy64/r2.5d_d34_l32_ft_sports1m_optical_flow.pkl?dl=0)|
 | R2.5D-34 | 32x112x112 | RGB | Sports1M+Kinetics  | 63.9   | 74.2    | 92.1    | [link](https://www.dropbox.com/s/odd9smqn2t54run/r2.5d_d34_l32_ft_sports1m.pkl?dl=0)|
 
-These models are presented in Table 5 of the [paper](https://128.84.21.199/pdf/1711.11248.pdf) with R(2+1)D trained from scratch or pre-trained on [Sports1M](https://cs.stanford.edu/people/karpathy/deepvideo) then finetuned on Kinetics. The models are evaluated using **dense prediction** similar to I3D. We densely sample clips from video, and for each clip we extract prediction for its center crop. The clip predictions are averaged to make video prediction. To reproduce these numbers, you need to use `extract_features.py` to compute prediction for clips and then aggregate the predictions.
+These models are presented in Table 5 of the [paper](https://128.84.21.199/pdf/1711.11248.pdf) with R(2+1)D trained from scratch or pre-trained on [Sports1M](https://cs.stanford.edu/people/karpathy/deepvideo) then fine-tuned on Kinetics. The models are evaluated using **dense prediction** similar to I3D. We densely sample clips from video, and for each clip we extract prediction for its center crop. The clip predictions are averaged to make video prediction. To reproduce these numbers, you need to use `extract_features.py` to compute prediction for clips and then aggregate the predictions.
 
 ```
 sh scripts/extract_feature_kinetics.sh

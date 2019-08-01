@@ -6,4 +6,4 @@
 
 
 ### ImportError: No module named models.model_builder
-At root directory(R2Plus1D), do: ```export PYTHONPATH=$PYTHONPATH:`pwd`/lib```
+At root directory(VMZ), do: ```export PYTHONPATH=$PYTHONPATH:`pwd`/lib```

@@ -1,10 +1,10 @@
-# Tutorial 4: Feature extraction
+# Feature extraction
 
 This tutorial will help you, step-by-step, how to extract features using our pre-trained models.
 
 ## Preparing data
 
-In this example, we assume that you would like to extract features for the two following videos:
+In this example, we assume that you would like to extract features for the following two videos:
 
 ```
 /your_path/climb/rope_climb_Olivia_Age_4_climb_f_cm_np1_ba_med_1.avi

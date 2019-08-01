@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 
-# implement C3D model with additional batch norm layers
+# implement C3D model
 # input 3 x 16 x 112 x 112
 # reference model is here https://fburl.com/cfzvuwbj
 def create_model(
@@ -27,7 +27,6 @@ def create_model(
     num_labels,
     label=None,
     is_test=0,
-    no_loss=False,
     no_bias=0,
     fc6_dim=4096,
     fc7_dim=4096,
@@ -265,16 +264,4 @@ def create_model(
         'fc7_dropout', 'last_out_L{}'.format(num_labels), fc7_dim, num_labels
     )
 
-    if no_loss:
-        return last_out
-
-    # If we create model for training, use softmax-with-loss
-    if (label is not None):
-        (softmax, loss) = model.SoftmaxWithLoss(
-            [last_out, label],
-            ["softmax", "loss"],
-        )
-        return (softmax, loss)
-    else:
-        # For inference, we just return softmax
-        return model.Softmax(last_out, "softmax")
+    return last_out

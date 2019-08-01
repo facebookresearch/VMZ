@@ -17,25 +17,30 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from models import c3d_model
-from models import r3d_model
-from caffe2.python import core, brew
-
 import logging
-import lmdb
 
 logging.basicConfig()
 log = logging.getLogger("model_builder")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
-r3d_models = [
+
+from models import c3d_model
+from models import r3d_model
+
+from models.loss import loss_creator
+
+
+video_models = [
     'r2d', 'r2df',
     'mc2', 'mc3', 'mc4', 'mc5',
     'rmc2', 'rmc3', 'rmc4', 'rmc5',
-    'r3d', 'r2plus1d', 'c3d'
+    'r3d', 'r2plus1d', 'c3d',
+    'ir-csn', 'ip-csn',
 ]
 
-model_depths = [10, 16, 18, 26, 34]
+model_depths = [
+    10, 16, 18, 26, 34, 50, 101, 152
+]
 
 
 def model_validation(
@@ -44,46 +49,27 @@ def model_validation(
     clip_length,
     crop_size,
 ):
-    if model_name not in r3d_models and model_name != 'c3d':
-        log.info("Unsupported model name: {}".format(model_name))
+    if crop_size != 112 and crop_size != 224:
+        log.info("Unsupported crop size...")
+        return False
+    elif model_name not in video_models and model_name != 'c3d':
+        log.info("Unsupported model name...")
         return False
     elif model_depth not in model_depths:
         log.info("Unsupported model depth...")
         return False
-    elif clip_length % 8 != 0:
+    elif clip_length % 2 != 0 and model_name[0:3] != 'r2d':
         log.info("Unsupported clip length...")
         return False
-    elif crop_size != 112 and crop_size != 224:
-        log.info("Unsupported crop size...")
+    elif model_name[-4:] == '-sep' and (model_depth <= 18 or model_depth == 34):
+        log.info("depthwise convolution works with bottleneck block only")
         return False
     else:
-        log.info("Validated: {} with {} layers".format(
-            model_name, model_depth)
-        )
+        log.info("Validated: {} with {} layers".format(model_name, model_depth))
         log.info("with input {}x{}x{}".format(
             clip_length, crop_size, crop_size)
         )
         return True
-
-
-def create_data_reader(
-    model,
-    name,
-    input_data,
-):
-
-    reader = model.param_init_net.CreateDB(
-        [],
-        name=name,
-        db=input_data,
-        db_type='lmdb',
-    )
-
-    lmdb_env = lmdb.open(input_data, readonly=True)
-    stat = lmdb_env.stat()
-    number_of_examples = stat["entries"]
-    lmdb_env.close()
-    return reader, number_of_examples
 
 
 def build_model(
@@ -91,6 +77,7 @@ def build_model(
     model_name,
     model_depth,
     num_labels,
+    batch_size,
     num_channels,
     crop_size,
     clip_length,
@@ -99,13 +86,21 @@ def build_model(
     is_test=0,
     pred_layer_name=None,
     multi_label=0,
+    channel_multiplier=1.0,
+    bottleneck_multiplier=1.0,
+    use_dropout=False,
+    conv1_temporal_stride=1,
+    conv1_temporal_kernel=3,
+    use_convolutional_pred=False,
+    use_pool1=False,
 ):
     log.info('creating {}, depth={}...'.format(
         model_name,
         (model_depth if model_name != 'c3d' else 8))
     )
     if model_name == 'c3d':
-        assert crop_size == 112  # c3d supports only 16 x 112 x 112
+        # c3d supports only 16 x 112 x 112
+        assert crop_size == 112
         assert clip_length == 16
         last_out = c3d_model.create_model(
             model=model,
@@ -113,9 +108,8 @@ def build_model(
             num_input_channels=num_channels,
             num_labels=num_labels,
             is_test=is_test,
-            no_loss=True
         )
-    elif model_name in r3d_models:
+    elif model_name in video_models:
         last_out = r3d_model.create_model(
             model=model,
             model_name=model_name,
@@ -126,29 +120,26 @@ def build_model(
             clip_length=clip_length,
             data=data,
             is_test=is_test,
+            channel_multiplier=channel_multiplier,
+            bottleneck_multiplier=bottleneck_multiplier,
+            use_dropout=use_dropout,
+            conv1_temporal_stride=conv1_temporal_stride,
+            conv1_temporal_kernel=conv1_temporal_kernel,
+            use_convolutional_pred=use_convolutional_pred,
+            use_pool1=use_pool1,
         )
     else:
         # unlikely to happen if we have used model validation
         log.info("Unknown architecture...")
 
-    if multi_label:
-        pred_logit = brew.elementwise_linear(
-            model, last_out, 'pred_logit_L{}'.format(num_labels), num_labels
-        )
-        model.Sigmoid(pred_logit, 'prob')
-        label_float = model.Cast(
-            'label', 'label_float', to=core.DataType.FLOAT
-        )
-        loss = model.SigmoidCrossEntropyWithLogits(
-            [pred_logit, label_float],
-            'loss',
-        )
-    else:
-        [softmax, loss] = model.SoftmaxWithLoss(
-            [last_out, 'label'],
-            ["softmax", "loss"],
-        )
-        model.Accuracy([softmax, "label"], "accuracy")
-
-    loss = model.Scale(loss, scale=loss_scale)
+    # adding a loss
+    loss = loss_creator.add_loss(
+        model,
+        last_out,
+        multi_label,
+        use_convolutional_pred,
+        num_labels,
+        batch_size,
+        loss_scale
+    )
     return [loss]

@@ -43,6 +43,7 @@ def GetFlopsAndParams(model, gpu_id=0):
 
     num_flops = 0
     num_params = 0
+    num_interactions = 0
     for idx in range(len(param_ops)):
         op = param_ops[idx]
         op_type = op.type
@@ -52,7 +53,7 @@ def GetFlopsAndParams(model, gpu_id=0):
         layer_params = 0
         if op_type == 'Conv':
             for op_input in op_inputs:
-                if '_w' in op_input:
+                if '_w' in op_input and 'bias' not in op_input:
                     param_blob = op_input
                     param_shape = np.array(
                         workspace.FetchBlob(str(param_blob))).shape
@@ -62,11 +63,15 @@ def GetFlopsAndParams(model, gpu_id=0):
                     output_shape = np.array(
                         workspace.FetchBlob(str(op_output))).shape
                     layer_flops = layer_params * np.prod(output_shape[2:])
-                    log.info('{} size {}x{}x{} FLOPs {} params {}'.format(
-                        str(param_blob),
-                        param_shape[2], param_shape[3], param_shape[4],
-                        layer_flops,
-                        layer_params))
+                    layer_interactions = 0.5 * param_shape[0] * param_shape[1] * (param_shape[1] - 1)
+                    # log.info('{} size {}x{}x{} FLOPs {} params {} inters {}'.format(
+                    #     str(param_blob),
+                    #     (param_shape[2] if len(param_shape) == 5 else 1),
+                    #     (param_shape[3] if len(param_shape) == 5 else param_shape[2]),
+                    #     (param_shape[4] if len(param_shape) == 5 else param_shape[3]),
+                    #     layer_flops,
+                    #     layer_params,
+                    #     layer_interactions))
         elif op_type == 'FC':
             for op_input in op_inputs:
                 if '_w' in op_input:
@@ -75,14 +80,17 @@ def GetFlopsAndParams(model, gpu_id=0):
                         workspace.FetchBlob(str(param_blob))).shape
                     layer_params = param_shape[0] * param_shape[1]
                     layer_flops = layer_params
+                    layer_interactions = 0  # not count interactions on FC
         layer_params /= 1000000
         layer_flops /= 1000000000
+        layer_interactions /= 1000000000
         num_flops += layer_flops
         num_params += layer_params
-    return num_flops, num_params
+        num_interactions += layer_interactions
+    return num_flops, num_params, num_interactions
 
 
-def LoadModel(path, dbtype='log_file_db'):
+def LoadModel(path, dbtype='minidb'):
     '''
     Load pretrained model from file
     '''
@@ -108,6 +116,10 @@ def AddVideoInput(model, reader, **kwargs):
         get_video_id = kwargs['get_video_id']
     else:
         get_video_id = False
+    if 'get_start_frame' in kwargs:
+        get_start_frame = kwargs['get_start_frame']
+    else:
+        get_start_frame = False
 
     if input_type == 0:
         log.info('outputing rgb data')
@@ -117,12 +129,20 @@ def AddVideoInput(model, reader, **kwargs):
         log.info('unknown input_type option')
 
     if get_video_id:
-        data, label, video_id = model.net.VideoInput(
-            reader,
-            ["data", "label", "video_id"],
-            name="data",
-            **kwargs
-        )
+        if get_start_frame:
+            data, label, video_id, start_frame = model.net.VideoInput(
+                reader,
+                ["data", "label", "video_id", "start_frame"],
+                name="data",
+                **kwargs
+            )
+        else:
+            data, label, video_id = model.net.VideoInput(
+                reader,
+                ["data", "label", "video_id"],
+                name="data",
+                **kwargs
+            )
     else:
         data, label = model.net.VideoInput(
             reader,

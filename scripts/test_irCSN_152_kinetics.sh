@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python tools/test_net.py \
---test_data=/data/users/trandu/datasets/kinetics_val_list/ \
---model_name=r2plus1d --model_depth=18 --gpus=0 \
---clip_length_rgb=8 --num_labels=400 --batch_size=1 \
---use_local_file=1 --clip_per_video=10 \
---load_model_path=/mnt/homedir/trandu/video_models/kinetics/l8/r2.5d_d18_l8.pkl
+python tools/test_net_large.py \
+--test_data=/data/users/trandu/kinetics/kinetics_val_high_qual_480_lmdb/ \
+--model_name=ir-csn --model_depth=152 --gpus=0 \
+--num_labels=400 --batch_size=1 --use_pool1=1 \
+--clip_length_rgb=32 --sampling_rate_rgb=2 \
+--scale_w=342 --scale_h=256 --crop_size=256 --video_res_type=1 \
+--use_convolutional_pred=1 \
+--crop_per_inference=1 --crop_per_clip=3 \
+--clip_per_video=10 --use_local_file=1 \
+--load_model_path=/data/users/trandu/models/irCSN_152_ft_kinetics_from_URU_f126851907.pkl
