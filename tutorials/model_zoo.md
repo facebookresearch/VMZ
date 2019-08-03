@@ -33,6 +33,6 @@ The evaluation metrics are top-1 and top-5 video-level accuracy on Kinetics-400 
 ### ip-CSN-152
 | Input size | Pre-trained dataset | Pre-trained model  | Video@1 | Video@5 | Finetuned model | GFLOPs | params(M) |
 | -----------| ------------ | -- | ------- | ------- | -------- | ----- | --------- |
-| 32x224x224 | None | TBD | TBD    | TBD    | TBD   | 108.8 | 32.8 |
+| 32x224x224 | None | None | 77.8    | 92.8    | [link](https://www.dropbox.com/s/3fihu6ti60047mu/ipCSN_152_kinetics_from_scratch_f129594342.pkl?dl=0)   | 108.8 | 32.8 |
 | 32x224x224 | Sports1M | [link](https://www.dropbox.com/s/70di7o7qz6gjq6x/ipCSN_152_sports1m_from_scratch_f111018543.pkl?dl=0) | 78.8    | 93.5    | [link](https://www.dropbox.com/s/ir7cr0hda36knux/ipCSN_152_ft_kinetics_from_sports1m_f111279053.pkl?dl=0)      | 108.8 | 32.8 |
 | 32x224x224 | IG-65M | TBD | TBD    | TBD    | TBD   | 108.8 | 32.8 |
