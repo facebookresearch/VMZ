@@ -35,4 +35,4 @@ The evaluation metrics are top-1 and top-5 video-level accuracy on Kinetics-400 
 | -----------| ------------ | -- | ------- | ------- | -------- | ----- | --------- |
 | 32x224x224 | None | None | 77.8    | 92.8    | [link](https://www.dropbox.com/s/3fihu6ti60047mu/ipCSN_152_kinetics_from_scratch_f129594342.pkl?dl=0)   | 108.8 | 32.8 |
 | 32x224x224 | Sports1M | [link](https://www.dropbox.com/s/70di7o7qz6gjq6x/ipCSN_152_sports1m_from_scratch_f111018543.pkl?dl=0) | 78.8    | 93.5    | [link](https://www.dropbox.com/s/ir7cr0hda36knux/ipCSN_152_ft_kinetics_from_sports1m_f111279053.pkl?dl=0)      | 108.8 | 32.8 |
-| 32x224x224 | IG-65M | TBD | TBD    | TBD    | TBD   | 108.8 | 32.8 |
+| 32x224x224 | IG-65M | [link](https://www.dropbox.com/s/1ryvx8k7kzs8od6/ipCSN_152_ig65m_from_scratch_f130601052.pkl?dl=0) | 82.5    | 95.3    | [link](https://www.dropbox.com/s/zpp3p0vn2i7bibl/ipCSN_152_ft_kinetics_from_ig65m_f133090949.pkl?dl=0) | 108.8 | 32.8 |
