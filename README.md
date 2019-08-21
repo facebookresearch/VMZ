@@ -31,7 +31,7 @@ We provide our latest video models including R(2+1)D, ir-CSN, ip-CSN (all with 1
 | Input size | Pretrained dataset | Pretrained model  | Video@1 Kinetics | Video@5 Kinetics | Finetuned model | GFLOPS | params(M) |
 | ---------- | ------ | ------ | ------- | ------- | -------- | ----- | ------ |
 | 32x224x224 | Sports1M | [link](https://www.dropbox.com/s/70di7o7qz6gjq6x/ipCSN_152_Sports1M_from_scratch_f111018543.pkl?dl=0) | 78.8    | 93.5    | [link](https://www.dropbox.com/s/ir7cr0hda36knux/ipCSN_152_ft_kinetics_from_Sports1M_f111279053.pkl?dl=0)      | 108.8 | 32.8 |
-| 32x224x224 | IG-65M | TBD | TBD    | TBD    | TBD   | 108.8 | 32.8 |
+| 32x224x224 | IG-65M | [link](https://www.dropbox.com/s/1ryvx8k7kzs8od6/ipCSN_152_ig65m_from_scratch_f130601052.pkl?dl=0) | 82.5    | 95.3    | [link](https://www.dropbox.com/s/zpp3p0vn2i7bibl/ipCSN_152_ft_kinetics_from_ig65m_f133090949.pkl?dl=0)   | 108.8 | 32.8 |
 
 
 ## References
