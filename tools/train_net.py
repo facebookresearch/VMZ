@@ -555,12 +555,12 @@ def main():
                         help="Conv1 temporal striding")
     parser.add_argument("--conv1_temporal_kernel", type=int, default=3,
                         help="Conv1 temporal kernel")
-    parser.add_argument("--video_res_type", type=int, default=0,
+    parser.add_argument("--video_res_type", type=int, default=1,
                         help="Video frame scaling option, 0: scaled by "
                         + "height x width; 1: scaled by short edge")
     parser.add_argument("--use_pool1", type=int, default=0,
                         help="use pool1 layer")
-    parser.add_argument("--jitter_scales", type=str, default=None, required=True,
+    parser.add_argument("--jitter_scales", type=str, default="128,160", required=True,
                         help="spatial scales jitter, separated by commas")
     parser.add_argument("--use_local_file", type=int, default=0,
                         help="use local file")
