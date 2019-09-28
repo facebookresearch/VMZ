@@ -12,7 +12,7 @@ The evaluation metrics are top-1 and top-5 video-level accuracy on Kinetics-400 
 | Input size | Pre-trained dataset | Pre-trained model  | Video@1 | Video@5 | Finetuned model | GFLOPs | params(M) |
 | -----------| ----------- |-----   | ------- | ------- | -------- | -----   | --------- |
 | 8x112x122  |  IG-65M     | [link](https://www.dropbox.com/s/6xwyu1az6oy4ts7/r2plus1d_34_clip8_ig65m_from_scratch_f79708462.pkl?dl=0)   | 74.9    | 91.8    | [link](https://www.dropbox.com/s/p81twy88kwrrcop/r2plus1d_34_clip8_ft_kinetics_from_ig65m_%20f128022400.pkl?dl=0)     | 49.8    | 63.6      |
-| 32x112x122 |  IG-65M     | [link](https://www.dropbox.com/s/y8vx3gihhsd8f5b/r2plus1d_34_clip32_ig65m_from_scratch_f102649996.pkl?dl=0)   | 80.0    | 94.2    | [link](https://www.dropbox.com/s/z41ff7vs0bzf6b8/r2plus1d_34_clip32_ft_kinetics_from_ig65m_%20f106169681.pkl?dl=0)     | 199.0   | 63.6      |
+| 32x112x122 |  IG-65M     | [link](https://www.dropbox.com/s/eimo232tqw8mwi9/r2plus1d_34_clip32_ig65m_from_scratch_f102649996.pkl?dl=0)   | 80.0    | 94.2    | [link](https://www.dropbox.com/s/z41ff7vs0bzf6b8/r2plus1d_34_clip32_ft_kinetics_from_ig65m_%20f106169681.pkl?dl=0)     | 199.0   | 63.6      |
 
 ### R(2+1)D-152
 
