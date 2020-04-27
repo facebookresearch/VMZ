@@ -1,5 +1,35 @@
 import torch.nn
 
+# TODO: upload models and load them
+model_urls = {
+    "r2plus1d_34_kinetics_8frms": "",  # noqa: E501
+    "r2plus1d_34_kinetics_32frms": "",  # noqa: E501
+    "r2plus1d_34_ig65m_8frms": "",  # noqa: E501
+    "r2plus1d_34_ig65m_32frms": "",  # noqa: E501
+    "r2plus1d_152_ig65m_8frms": "",  # noqa: E501
+    "r2plus1d_152_ig65m_32frms": "",  # noqa: E501
+    "ir_csn_152_ig65m_32frms": "",  # noqa: E501
+    "ip_csn_152_ig65m_32frms": "",  # noqa: E501
+}
+
+
+def _generic_resnet(arch, pretrained=False, progress=False, **kwargs):
+    model = VideoResNet(**kwargs)
+
+    # We need exact Caffe2 momentum for BatchNorm scaling
+    for m in model.modules():
+        if isinstance(m, nn.BatchNorm3d):
+            m.eps = 1e-3
+            m.momentum = 0.9
+
+    if pretrained:
+        state_dict = torch.hub.load_state_dict_from_url(
+            model_urls[arch], progress=progress
+        )
+        model.load_state_dict(state_dict)
+
+    return model
+
 
 class BasicStem_Pool(nn.Sequential):
     def __init__(self):

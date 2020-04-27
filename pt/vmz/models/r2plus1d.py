@@ -5,35 +5,7 @@ import torch.nn as nn
 
 from torchvision.models.video.resnet import VideoResNet
 
-from .utils import R2Plus1dStem, Conv2Plus1D
-
-# TODO: upload models and load them
-model_urls = {
-    "r2plus1d_34_kinetics_8frms": "",  # noqa: E501
-    "r2plus1d_34_kinetics_32frms": "",  # noqa: E501
-    "r2plus1d_34_ig65m_8frms": "",  # noqa: E501
-    "r2plus1d_34_ig65m_32frms": "",  # noqa: E501
-    "r2plus1d_152_ig65m_8frms": "",  # noqa: E501
-    "r2plus1d_152_ig65m_32frms": "",  # noqa: E501
-}
-
-
-def _generic_r2pluls1d(arch, pretrained=False, progress=False, **kwargs):
-    model = VideoResNet(**kwargs)
-
-    # We need exact Caffe2 momentum for BatchNorm scaling
-    for m in model.modules():
-        if isinstance(m, nn.BatchNorm3d):
-            m.eps = 1e-3
-            m.momentum = 0.9
-
-    if pretrained:
-        state_dict = torch.hub.load_state_dict_from_url(
-            model_urls[arch], progress=progress
-        )
-        model.load_state_dict(state_dict)
-
-    return model
+from .utils import _generic_resnet, R2Plus1dStem, Conv2Plus1D
 
 
 def r2plus1d_34(pretraining="", progress=False, **kwargs):
@@ -55,7 +27,7 @@ def r2plus1d_34(pretraining="", progress=False, **kwargs):
         arch = "r2plus1d_34"
         pretrained = False
 
-    model = _generic_r2pluls1d(
+    model = _generic_resnet(
         arch
         pretrained,
         progress,
@@ -97,7 +69,7 @@ def r2plus1d_152(pretraining="", progress=False, **kwargs):
         arch = "r2plus1d_34"
         pretrained = False
 
-    model = _generic_r2pluls1d(
+    model = _generic_resnet(
         arch
         pretrained,
         progress,
