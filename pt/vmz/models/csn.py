@@ -3,10 +3,10 @@ import warnings
 import torch.hub
 import torch.nn as nn
 
-from torchvision.models.video.resnet import VideoResNet
-
 from .utils import _generic_resnet, Conv3DDepthwise, BasicStem_Pool, IPConv3DDepthwise
 
+
+__all__ = ["ir_csn_152", "ip_csn_152"]
 
 
 def ir_csn_152(pretraining="", progress=False, **kwargs):

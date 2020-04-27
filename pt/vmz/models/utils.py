@@ -1,4 +1,6 @@
 import torch.nn
+from torchvision.models.video.resnet import VideoResNet
+
 
 # TODO: upload models and load them
 model_urls = {

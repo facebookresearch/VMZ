@@ -3,9 +3,11 @@ import warnings
 import torch.hub
 import torch.nn as nn
 
-from torchvision.models.video.resnet import VideoResNet
-
 from .utils import _generic_resnet, R2Plus1dStem, Conv2Plus1D
+
+
+__all__ = ["r2plus1d_34, r2plus1d_152"]
+
 
 
 def r2plus1d_34(pretraining="", progress=False, **kwargs):
