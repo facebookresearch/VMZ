@@ -157,12 +157,6 @@ def AddVideoInput(model, reader, **kwargs):
                 **kwargs
             )
     else:
-        util_folder, _ = os.path.split(os.path.dirname(__file__))
-        lib_folder, _ = os.path.split(util_folder)
-        vmz_folder, _ =os.path.split(lib_folder)
-        av_lib = os.path.join(vmz_folder, "build/av_ops.so")
-        assert os.path.exists(av_lib), "no av_lib found, please build first"
-        dyndep.InitOpsLibrary(av_lib)
         if input_type == 2:
             if get_video_id:
                 if get_start_frame:

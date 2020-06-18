@@ -20,7 +20,7 @@
 #include <opencv2/opencv.hpp>
 
 #include <random>
-#include "caffe/proto/caffe.pb.h"
+// #include "caffe/proto/caffe.pb.h"
 #include "av_video_decoder_commons.h"
 #include "LogMels.h"
 

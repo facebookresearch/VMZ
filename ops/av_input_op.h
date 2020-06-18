@@ -10,7 +10,7 @@
 #include "caffe2/core/logging.h"
 #include "caffe2/operators/prefetch_op.h"
 #include "caffe2/utils/math.h"
-#include "caffe2/c10/core/thread_pool.h"
+#include "c10/core/thread_pool.h"
 #include "av_decoder.h"
 #include "av_io.h"
 
