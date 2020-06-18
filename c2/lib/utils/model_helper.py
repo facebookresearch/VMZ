@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from caffe2.python import workspace, core
+from caffe2.python import workspace, core, dyndep
 import caffe2.python.predictor.predictor_exporter as pred_exp
 import caffe2.python.predictor.predictor_py_utils as pred_utils
 from caffe2.python.predictor_constants import predictor_constants \
@@ -25,6 +25,7 @@ from caffe2.python.predictor_constants import predictor_constants \
 
 
 import logging
+import os
 
 logging.basicConfig()
 log = logging.getLogger("model_helper")
@@ -125,31 +126,91 @@ def AddVideoInput(model, reader, **kwargs):
         log.info('outputing rgb data')
     elif input_type == 1:
         log.info('outputing optical flow data')
+    elif input_type == 2:
+        log.info('outputing logmels')
+    elif input_type == 3:
+        log.info('outputing rgb and logmels')
     else:
         log.info('unknown input_type option')
 
-    if get_video_id:
-        if get_start_frame:
-            data, label, video_id, start_frame = model.net.VideoInput(
-                reader,
-                ["data", "label", "video_id", "start_frame"],
-                name="data",
-                **kwargs
-            )
+    if input_type <= 1: # no audio decoding
+        if get_video_id:
+            if get_start_frame:
+                data, label, video_id, start_frame = model.net.VideoInput(
+                    reader,
+                    ["data", "label", "video_id", "start_frame"],
+                    name="data",
+                    **kwargs
+                )
+            else:
+                data, label, video_id = model.net.VideoInput(
+                    reader,
+                    ["data", "label", "video_id"],
+                    name="data",
+                    **kwargs
+                )
         else:
-            data, label, video_id = model.net.VideoInput(
+            data, label = model.net.VideoInput(
                 reader,
-                ["data", "label", "video_id"],
+                ["data", "label"],
                 name="data",
                 **kwargs
             )
     else:
-        data, label = model.net.VideoInput(
-            reader,
-            ["data", "label"],
-            name="data",
-            **kwargs
-        )
+        util_folder, _ = os.path.split(os.path.dirname(__file__))
+        lib_folder, _ = os.path.split(util_folder)
+        vmz_folder, _ =os.path.split(lib_folder)
+        av_lib = os.path.join(vmz_folder, "build/av_ops.so")
+        assert os.path.exists(av_lib), "no av_lib found, please build first"
+        dyndep.InitOpsLibrary(av_lib)
+        if input_type == 2:
+            if get_video_id:
+                if get_start_frame:
+                    data, label, video_id, start_frame = model.net.AVInput(
+                        reader,
+                        ["data", "label", "video_id", "start_frame"],
+                        name="data",
+                        **kwargs
+                    )
+                else:
+                    data, label, video_id = model.net.AVInput(
+                        reader,
+                        ["data", "label", "video_id"],
+                        name="data",
+                        **kwargs
+                    )
+            else:
+                data, label = model.net.AVInput(
+                    reader,
+                    ["data", "label"],
+                    name="data",
+                    **kwargs
+                )
+        else:
+            assert input_type == 3, "unknown video input type"
+            if get_video_id:
+                if get_start_frame:
+                    data, logmels, label, video_id, start_frame = model.net.AVInput(
+                        reader,
+                        ["data", "logmels", "label", "video_id", "start_frame"],
+                        name="data",
+                        **kwargs
+                    )
+                else:
+                    data, logmels, label, video_id = model.net.AVInput(
+                        reader,
+                        ["data", "logmels", "label", "video_id"],
+                        name="data",
+                        **kwargs
+                    )
+            else:
+                data, logmels, label = model.net.AVInput(
+                    reader,
+                    ["data", "logmels", "label"],
+                    name="data",
+                    **kwargs
+                )
+            logmels = model.StopGradient(logmels, logmels)
 
     data = model.StopGradient(data, data)
 
