@@ -184,16 +184,15 @@ void AVDecoder::decodeLoop(
     }
     ret = avformat_open_input(&inputContext, "", nullptr, nullptr);
     if (ret < 0) {
-      LOG(ERROR) <<
-          folly::sformat("Unable to open stream : {}", ffmpegErrorStr(ret));
+      LOG(ERROR) << "Unable to open stream : " << ffmpegErrorStr(ret);
+      return;
     }
 
     ret = avformat_find_stream_info(inputContext, nullptr);
     if (ret < 0) {
-      LOG(ERROR) << (folly::sformat(
-          "Unable to find stream info in {:s}: {:s}",
-          videoName,
-          ffmpegErrorStr(ret)));
+      LOG(ERROR) << "Unable to find stream info in " << videoName << " "
+                 << ffmpegErrorStr(ret);
+      return;
     }
 
     // Decode the first video stream
@@ -249,8 +248,7 @@ void AVDecoder::decodeLoop(
             std::string(audioCodecContext_->codec->name) : "None";
 
 
-        LOG(ERROR) << (folly::sformat(
-            "Cannot open audio codec : {}", codecName));
+        LOG(ERROR) << "Cannot open audio codec : " << codecName;
       }
 
       convertCtx_ = swr_alloc_set_opts(
@@ -285,7 +283,6 @@ void AVDecoder::decodeLoop(
     double prevTimestamp = 0;
     int outWidth = 0;
     int outHeight = 0;
-    facebook::MonotonicUsecTimer frame_decode_timer(true);
 
     if (params.getVideo_ && videoStreamIndex_ >= 0) {
       videoCodecContext_ = videoStream_->codec;
@@ -299,9 +296,10 @@ void AVDecoder::decodeLoop(
       }
 
       if (ret < 0) {
-        LOG(ERROR) << (folly::sformat(
-            "Cannot open video codec : {}", videoCodecContext_->codec->name));
-      }
+      LOG(ERROR) << "Cannot open video codec : "
+                 << videoCodecContext_->codec->name;
+      return;
+    }
 
       // Calculate if we need to rescale the frames
       const int origWidth = videoCodecContext_->width;
@@ -332,8 +330,7 @@ void AVDecoder::decodeLoop(
         outWidth = params.outputWidth_;
         outHeight = params.outputHeight_;
       } else {
-        LOG(ERROR) << (
-            folly::sformat("Unknown VideoResType: {}", params.video_res_type_));
+        LOG(ERROR) << "Unknown VideoResType: " << params.video_res_type_;
       }
 
       // Make sure that we have a valid format
@@ -514,8 +511,7 @@ void AVDecoder::decodeLoop(
             av_free_packet(&packet);
             continue;
           } else if (ret < 0) {
-            LOG(ERROR) << (folly::sformat(
-                "Error reading packet : {}", ffmpegErrorStr(ret)));
+            LOG(ERROR) << "Error reading packet : " << ffmpegErrorStr(ret);
           }
           ipacket++;
 
@@ -556,8 +552,7 @@ void AVDecoder::decodeLoop(
           ret = avcodec_decode_video2(
               videoCodecContext_, videoStreamFrame_, &gotPicture, &packet);
           if (ret < 0) {
-            LOG(ERROR) << (folly::sformat(
-                "Error decoding video frame : {}", ffmpegErrorStr(ret)));
+            LOG(ERROR) << "Error decoding video frame : " << ffmpegErrorStr(ret);
           }
           try {
             // Nothing to do without a picture
@@ -673,7 +668,6 @@ void AVDecoder::decodeLoop(
                     rgbFrame->data,
                     rgbFrame->linesize);
 
-                auto frame_decode_time_us = frame_decode_timer.stop();
                 unique_ptr<DecodedFrame> frame = make_unique<DecodedFrame>();
                 frame->width_ = outWidth;
                 frame->height_ = outHeight;
@@ -683,10 +677,7 @@ void AVDecoder::decodeLoop(
                 frame->outputFrameIndex_ = outputFrameIndex;
                 frame->timestamp_ = timestamp;
                 frame->keyFrame_ = videoStreamFrame_->key_frame;
-                frame->frameDecodeTimeUS_ = frame_decode_time_us;
                 callback.frameDecoded(std::move(frame));
-                frame_decode_timer.reset();
-                frame_decode_timer.start();
 
                 selectiveDecodedFrames++;
                 av_frame_free(&rgbFrame);
@@ -768,7 +759,7 @@ void AVDecoder::decodeFile(
 string AVDecoder::ffmpegErrorStr(int result) {
   std::array<char, 128> buf;
   av_strerror(result, buf.data(), buf.size());
-  return folly::sformat("{} ({})", string(buf.data()), result);
+  return string(buf.data());
 }
 
 void FreeAVDecodedData(

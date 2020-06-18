@@ -77,6 +77,7 @@ def create_model(
     acoustic_data="logmels",
     channel_multiplier=1.0,
     bottleneck_multiplier=1.0,
+    use_dropout=False,
     conv1_temporal_stride=1,
     conv1_temporal_kernel=3,
     use_convolutional_pred=False,

@@ -88,6 +88,7 @@ def Test(args):
         flow_data_type=args.flow_data_type,
         get_rgb=(args.input_type == 0 or args.input_type >= 3),
         get_optical_flow=(args.input_type == 1 or args.input_type >= 4),
+        get_logmels=(args.input_type >= 2),
         use_local_file=args.use_local_file,
         crop_per_clip=args.crop_per_clip,
     )

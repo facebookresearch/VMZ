@@ -25,9 +25,10 @@ OPERATOR_SCHEMA(AVInput)
       bool get_rgb = helper.GetSingleArgument<bool>("get_rgb", true);
       bool do_multi_label = helper.GetSingleArgument<bool>("do_multi_label", false);
       bool get_video_id = helper.GetSingleArgument<bool>("get_video_id", false);
+      bool get_start_frame = helper.GetSingleArgument<bool>("get_start_frame", false);
       bool get_logmels = helper.GetSingleArgument<bool>("get_logmels", false);
-      int logmel_frames = helper.GetSingleArgument<int>("logmel_frames", 0);
-      int logmel_filters = helper.GetSingleArgument<int>("logmel_filters", 0);
+      int logmel_frames = helper.GetSingleArgument<int>("logmel_frames", 100);
+      int logmel_filters = helper.GetSingleArgument<int>("logmel_filters", 40);
 
       int output_size = 1;
       if (get_rgb) {
@@ -37,6 +38,9 @@ OPERATOR_SCHEMA(AVInput)
         output_size++;
       }
       if (get_video_id) {
+        output_size++;
+      }
+      if (get_start_frame) {
         output_size++;
       }
 
@@ -63,9 +67,14 @@ OPERATOR_SCHEMA(AVInput)
             vector<int>{batch_size, num_of_class}, TensorProto::INT32);
       }
       if (get_video_id) {
-        out[index] =
+        out[index++] =
             CreateTensorShape(vector<int64_t>{1, batch_size}, TensorProto::INT64);
       }
+      if (get_start_frame) {
+        out[index] = CreateTensorShape(
+            vector<int>{1, batch_size}, TensorProto::INT32);
+      }
+
 
       return out;
     });

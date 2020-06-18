@@ -26,16 +26,16 @@
 #include <string>
 #include <vector>
 #include "caffe2/core/logging.h"
-#include "common/time/Time.h"
-#include "common/base/Exception.h"
-#include <folly/ScopeGuard.h>
-#include <folly/Format.h>
+// #include "common/time/Time.h"
+// #include "common/base/Exception.h"
+// #include <folly/ScopeGuard.h>
+// #include <folly/Format.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
-#include <libavutil/audioconvert.h>
+// #include <libavutil/audioconvert.h>
 #include <libavutil/log.h>
 #include <libavutil/motion_vector.h>
 #include <libswresample/swresample.h>
