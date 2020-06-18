@@ -273,6 +273,11 @@ def Train(args):
             conv1_temporal_stride=args.conv1_temporal_stride,
             conv1_temporal_kernel=args.conv1_temporal_kernel,
             use_pool1=args.use_pool1,
+            audio_input_3d=args.audio_input_3d,
+            g_blend=args.g_blend,
+            audio_weight=args.audio_weight,
+            visual_weight=args.visual_weight,
+            av_weight=args.av_weight,
         )
 
     # SGD
@@ -567,6 +572,16 @@ def main():
     parser.add_argument("--is_checkpoint", type=int, default=1,
                         help="0: pretrained_model is used as initalization"
                         + "1: pretrained_model is used as a checkpoint")
+    parser.add_argument("--audio_input_3d", type=int, default=0,
+                        help="is audio input 3d or 2d; 0 for 2d")
+    parser.add_argument("--g_blend", type=int, default=0,
+                        help="use gradient-blending to train model")
+    parser.add_argument("--audio_weight", type=float, default=0.0,
+                        help="g_blend weights for audio head")
+    parser.add_argument("--visual_weight", type=float, default=0.0,
+                        help="g_blend weights for visual head")
+    parser.add_argument("--av_weight", type=float, default=1.0,
+                        help="g_blend weights for av head")
     args = parser.parse_args()
 
     log.info(args)
