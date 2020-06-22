@@ -1,5 +1,6 @@
 /list/*.csv
 *.log
+*.pyc
 *.pkl
 lib/models/*.pyc
 lib/utils/*.pyc
