@@ -1,0 +1,93 @@
+## Table 1
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/r2plus1d_152_sports1m_from_scratch_f127111290.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/r2plus1d_152_sports1m_from_scratch_f127111290" \
+--model "r2plus1d_152" \
+--frames 32 \
+--classes 487 --inputsize 112
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/r2plus1d_152_ft_kinetics_from_sports1m_f128957437.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/r2plus1d_152_ft_kinetics_from_sports1m_f128957437" \
+--model "r2plus1d_152" \
+--frames 32 \
+--classes 400 --inputsize 112
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/r2plus1d_152_ig65m_from_scratch_f106380637.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/r2plus1d_152_ig65m_from_scratch_f106380637" \
+--model "r2plus1d_152" \
+--frames 32 \
+--classes 359 --inputsize 112
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/r2plus1d_152_ft_kinetics_from_ig65m_f107107466.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/r2plus1d_152_ft_kinetics_from_ig65m_f107107466" \
+--model "r2plus1d_152" \
+--frames 32 \
+--classes 400 --inputsize 112
+
+
+
+## Table 2
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/irCSN_152_Sports1M_from_scratch_f99918785.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/irCSN_152_Sports1M_from_scratch_f99918785" \
+--model "ir_csn_152" \
+--frames 32 \
+--classes 487 --inputsize 224
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/irCSN_152_ft_kinetics_from_Sports1M_f101599884.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/irCSN_152_ft_kinetics_from_Sports1M_f101599884" \
+--model "ir_csn_152" \
+--frames 32 \
+--classes 400 --inputsize 224
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/irCSN_152_ig65m_from_scratch_f125286141.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/irCSN_152_ig65m_from_scratch_f125286141" \
+--model "ir_csn_152" \
+--frames 32 \
+--classes 359 --inputsize 224
+
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/irCSN_152_ft_kinetics_from_ig65m_f126851907.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/irCSN_152_ft_kinetics_from_ig65m_f126851907" \
+--model "ir_csn_152" \
+--frames 32 \
+--classes 400 --inputsize 224
+
+
+## Table 3.
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/ipCSN_152_Sports1M_from_scratch_f111018543.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/ipCSN_152_Sports1M_from_scratch_f111018543" \
+--model "ip_csn_152" \
+--frames 32 \
+--classes 487 --inputsize 224
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/ipCSN_152_ft_kinetics_from_Sports1M_f111279053.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/ipCSN_152_ft_kinetics_from_Sports1M_f111279053" \
+--model "ip_csn_152" \
+--frames 32 \
+--classes 400 --inputsize 224
+
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/ipCSN_152_ig65m_from_scratch_f130601052.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/ipCSN_152_ig65m_from_scratch_f130601052" \
+--model "ip_csn_152" \
+--frames 32 \
+--classes 359 --inputsize 224
+
+
+python utilities/model_conversion/convert_models.py \
+--pkl "/checkpoint/bkorbar/caffe2_models/source/ipCSN_152_ft_kinetics_from_ig65m_f133090949.pkl" \
+--out "/checkpoint/bkorbar/caffe2_models/converted/ipCSN_152_ft_kinetics_from_ig65m_f133090949.pkl" \
+--model "ip_csn_152" \
+--frames 32 \
+--classes 400 --inputsize 224
