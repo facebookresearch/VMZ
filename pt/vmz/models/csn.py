@@ -12,6 +12,9 @@ __all__ = ["ir_csn_152", "ip_csn_152"]
 def ir_csn_152(pretraining="", progress=False, **kwargs):
     avail_pretrainings = [
         "ig65m_32frms",
+        "ig_ft_kinetics_32frms",
+        "sports1m_32frms",
+        "sports1m_ft_kinetics_32frms",
     ]
 
     if pretraining in avail_pretrainings:
@@ -42,6 +45,9 @@ def ip_csn_152(pretrained=False, progress=False, **kwargs):
     def ir_csn_152(pretraining="", progress=False, **kwargs):
     avail_pretrainings = [
         "ig65m_32frms",
+        "ig_ft_kinetics_32frms",
+        "sports1m_32frms",
+        "sports1m_ft_kinetics_32frms",
     ]
 
     if pretraining in avail_pretrainings:

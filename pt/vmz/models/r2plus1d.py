@@ -56,8 +56,10 @@ def r2plus1d_34(pretraining="", progress=False, **kwargs):
 
 def r2plus1d_152(pretraining="", progress=False, **kwargs):
     avail_pretrainings = [
-        "ig65m_8frms",
         "ig65m_32frms",
+        "ig_ft_kinetics_32frms",
+        "sports1m_32frms",
+        "sports1m_ft_kinetics_32frms",
     ]
     if pretraining in avail_pretrainings:
         arch = "r2plus1d_" + pretraining

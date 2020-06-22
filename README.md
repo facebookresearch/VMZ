@@ -17,5 +17,5 @@ Currently, this codebase supports the following models:
 
 
 ## Suporting Team
-This codebase is actively supported by Facebook AI computer vision: @CHJoanna, @weiyaowang, @hengcv, @deeptigp, @dutran, and independent researchers @bjuncek (Quantsight, Oxford VGG).
+This codebase is actively supported by Facebook AI computer vision: @CHJoanna, @weiyaowang, @hengcv, @deeptigp, @dutran, and community researchers @bjuncek (Quantsight, Oxford VGG).
 
