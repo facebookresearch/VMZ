@@ -138,7 +138,7 @@ def ir_csn_152(pretrained=False, progress=False, **kwargs):
         block=Bottleneck,
         conv_makers=[Conv3DDepthwise] * 4,
         layers=[3, 8, 36, 3],
-        stem=BasicStem,
+        stem=BasicStem_Pool,
         **kwargs
     )
     for m in model.modules():
