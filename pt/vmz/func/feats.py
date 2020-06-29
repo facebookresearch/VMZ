@@ -16,9 +16,7 @@ from vmz.datasets import get_dataset
 import vmz.models as models
 
 
-def extract_feats(
-    model, data_loader, device,
-):
+def extract_feats(model, data_loader, dataset, device, args):
     # TODO: docs and comments
     feats = {}
 
@@ -35,7 +33,12 @@ def extract_feats(
             for j in range(len(video_idx)):
                 video_id = video_idx[j].item()
                 if video_id not in list(feats.keys()):
-                    feats[video_id] = {"feature": [], "label": [], "clip_id": []}
+                    feats[video_id] = {
+                        "feature": [],
+                        "label": [],
+                        "clip_id": [],
+                        "pts": [],
+                    }
                 clip_id = clip_idx[j].item()
 
                 # note, this is not SM but FC layer actually
@@ -44,6 +47,9 @@ def extract_feats(
                 feats[video_id]["feature"].append(sm.cpu())
                 feats[video_id]["label"].append(label.cpu())
                 feats[video_id]["clip_id"].append(clip_id)
+                feats[video_id]["pts"].append(
+                    dataset.video_clips.video_pts[video_id][clip_id]
+                )
 
     # gather the stats from all processes
     sp = os.path.join(args.output_dir, "features.pth")
@@ -110,9 +116,7 @@ def ef_main(args):
         model_without_ddp.load_state_dict(checkpoint)
 
     print("Starting feature extraction")
-    extract_feats(
-        model, data_loader_test, device,
-    )
+    extract_feats(model, data_loader_test, dataset_test, device, args)
 
 
 if __name__ == "__main__":
