@@ -1,4 +1,5 @@
 from vmz import models
 from vmz import datasets
-from vmz import utils
+from vmz import common
+from vmz import func
 
