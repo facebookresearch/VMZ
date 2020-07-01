@@ -2,10 +2,7 @@ import torch
 import numbers
 import random
 
-from torchvision.transforms import (
-    RandomCrop,
-    RandomResizedCrop
-)
+from torchvision.transforms import RandomCrop, RandomResizedCrop
 
 
 __all__ = [
@@ -16,7 +13,7 @@ __all__ = [
     "ToTensorVideo",
     "RandomHorizontalFlipVideo",
     "Resize",
-    "TemporalCenterCrop"
+    "TemporalCenterCrop",
 ]
 
 
@@ -36,7 +33,7 @@ def crop(clip, i, j, h, w):
         clip (torch.tensor): Video clip to be cropped. Size is (C, T, H, W)
     """
     assert len(clip.size()) == 4, "clip should be a 4D tensor"
-    return clip[..., i:i + h, j:j + w]
+    return clip[..., i : i + h, j : j + w]
 
 
 def temporal_center_crop(clip, clip_len):
@@ -49,7 +46,7 @@ def temporal_center_crop(clip, clip_len):
     assert clip.size(1) >= clip_len, "clip is shorter than the proposed lenght"
     middle = int(clip.size(1) // 2)
     start = middle - clip_len // 2
-    return clip[:, start:start + clip_len, ...]
+    return clip[:, start : start + clip_len, ...]
 
 
 def resize(clip, target_size, interpolation_mode):
@@ -154,7 +151,7 @@ class RandomCropVideo(RandomCrop):
         return crop(clip, i, j, h, w)
 
     def __repr__(self):
-        return self.__class__.__name__ + '(size={0})'.format(self.size)
+        return self.__class__.__name__ + "(size={0})".format(self.size)
 
 
 class RandomResizedCropVideo(RandomResizedCrop):
@@ -184,15 +181,15 @@ class RandomResizedCropVideo(RandomResizedCrop):
                 size is (C, T, H, W)
         """
         i, j, h, w = self.get_params(clip, self.scale, self.ratio)
-        return resized_crop(
-            clip, i, j, h, w,
-            self.size, self.interpolation_mode)
+        return resized_crop(clip, i, j, h, w, self.size, self.interpolation_mode)
 
     def __repr__(self):
-        return self.__class__.__name__ + \
-            '(size={0}, interpolation_mode={1}, scale={2}, ratio={3})'.format(
+        return (
+            self.__class__.__name__
+            + "(size={0}, interpolation_mode={1}, scale={2}, ratio={3})".format(
                 self.size, self.interpolation_mode, self.scale, self.ratio
             )
+        )
 
 
 class CenterCropVideo(object):
@@ -213,7 +210,7 @@ class CenterCropVideo(object):
         return center_crop(clip, self.crop_size)
 
     def __repr__(self):
-        r = self.__class__.__name__ + '(crop_size={0})'.format(self.crop_size)
+        r = self.__class__.__name__ + "(crop_size={0})".format(self.crop_size)
         return r
 
 
@@ -233,16 +230,34 @@ class UnfoldClips(object):
 
     def __call__(self, clip):
         if clip.size(1) < self.clip_len:
-            return clip.unfold(
-                1,
-                clip.size(1),
-                clip.size(1)).permute(1, 0, 4, 2, 3)
+            return clip.unfold(1, clip.size(1), clip.size(1)).permute(1, 0, 4, 2, 3)
 
-        results = clip.unfold(
-            1,
-            self.clip_len,
-            self.clip_len).permute(1, 0, 4, 2, 3)
+        results = clip.unfold(1, self.clip_len, self.clip_len).permute(1, 0, 4, 2, 3)
         return results
+
+
+class TempPadClip(object):
+    def __init__(self, clip_len):
+        self.num_frames = clip_len
+
+    def __call__(self, clip):
+        if clip.size(1) == 0:
+            return clip
+        if clip.size(1) < self.num_frames:
+            # do something and return
+            step = clip.size(1) / self.num_frames
+            idxs = torch.arange(self.num_frames, dtype=torch.float32) * step
+            idxs = idxs.floor().to(torch.int64)
+            return clip[:, idxs, ...]
+        step = clip.size(1) / self.num_frames
+        if step.is_integer():
+            # optimization: if step is integer, don't need to perform
+            # advanced indexing
+            step = int(step)
+            return clip[:, slice(None, None, step), ...]
+        idxs = torch.arange(self.num_frames, dtype=torch.float32) * step
+        idxs = idxs.floor().to(torch.int64)
+        return clip[:, idxs, ...]
 
 
 class NormalizeVideo(object):
@@ -269,8 +284,9 @@ class NormalizeVideo(object):
         return normalize(clip, self.mean, self.std, self.inplace)
 
     def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1}, inplace={2})'.format(
-            self.mean, self.std, self.inplace)
+        return self.__class__.__name__ + "(mean={0}, std={1}, inplace={2})".format(
+            self.mean, self.std, self.inplace
+        )
 
 
 class ToTensorVideo(object):

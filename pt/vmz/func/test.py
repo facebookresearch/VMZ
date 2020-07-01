@@ -95,6 +95,7 @@ def test(model, criterion, data_loader, device, print_freq, metric_logger):
 
 
 def test_main(args):
+    torchvision.set_video_backend("video_reader")
     if args.output_dir:
         utils.mkdir(args.output_dir)
 
@@ -109,11 +110,11 @@ def test_main(args):
     transform_test = torchvision.transforms.Compose(
         [
             T.ToTensorVideo(),
-            T.Resize((256, 324)),
+            T.Resize((args.scale_h, args.scale_w)),
             T.NormalizeVideo(
                 mean=(0.43216, 0.394666, 0.37645), std=(0.22803, 0.22145, 0.216989)
             ),
-            T.CenterCropVideo(224),
+            T.CenterCropVideo((args.crop_size, args.crop_size)),
         ]
     )
 

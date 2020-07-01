@@ -31,7 +31,8 @@ def extract_feats(model, data_loader, dataset, device, args):
             output = model(video)
 
             for j in range(len(video_idx)):
-                video_id = video_idx[j].item()
+                vid = video_idx[j].item()
+                video_id = dataset.video_clips.video_paths[vid]
                 if video_id not in list(feats.keys()):
                     feats[video_id] = {
                         "feature": [],
@@ -48,7 +49,7 @@ def extract_feats(model, data_loader, dataset, device, args):
                 feats[video_id]["label"].append(label.cpu())
                 feats[video_id]["clip_id"].append(clip_id)
                 feats[video_id]["pts"].append(
-                    dataset.video_clips.video_pts[video_id][clip_id]
+                    dataset.video_clips.video_pts[vid][clip_id]
                 )
 
     # gather the stats from all processes

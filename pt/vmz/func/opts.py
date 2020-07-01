@@ -85,12 +85,9 @@ def parse_args():
     parser.add_argument(
         "--sync-bn", dest="sync_bn", help="Use sync batch norm", action="store_true",
     )
-    # parser.add_argument(
-    #     "--test-only",
-    #     dest="test_only",
-    #     help="Only test the model",
-    #     action="store_true",
-    # )
+    parser.add_argument(
+        "--eval_only", help="Only validate the model", action="store_true",
+    )
     # parser.add_argument(
     #     "--test_on_cluster",
     #     dest="is_online",

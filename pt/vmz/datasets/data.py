@@ -46,7 +46,7 @@ def get_dataset(args, transform, split="train"):
         )
 
     _dataset.video_clips.compute_clips(args.num_frames, 1)
-    if args.train_file is None:
+    if args.train_file is None or not os.path.isfile(args.train_file):
         utils.save_on_master(
             _dataset.metadata,
             "{}_{}_{}fms.pth".format(args.dataset, split, args.num_frames),
@@ -70,9 +70,7 @@ def dataset_load_defaults(args):
     if args.dataset == "kinetics400":
         args.traindir = "/datasets01_101/kinetics/070618/train_avi-480p"
         args.valdir = "/datasets01_101/kinetics/070618/val_avi-480p"
-        args.train_file = (
-            "/checkpoint/bkorbar/DATASET_TV/kinetics_train32frms_01_101.pth"
-        )
+        args.train_file = "/checkpoint/bkorbar/DATASET_TV/"
         args.val_file = "/checkpoint/bkorbar/DATASET_TV/kinetics_val32frms_01_101.pth"
     if args.dataset == "ucf101":
         args.traindir = "/private/home/bkorbar/data/video/ucf101/data"
