@@ -70,7 +70,7 @@ def dataset_load_defaults(args):
     if args.dataset == "kinetics400":
         args.traindir = "/datasets01_101/kinetics/070618/train_avi-480p"
         args.valdir = "/datasets01_101/kinetics/070618/val_avi-480p"
-        args.train_file = "/checkpoint/bkorbar/DATASET_TV/"
+        args.train_file = "/checkpoint/bkorbar/DATASET_TV/kinetics_val32frms_01_101.pth"
         args.val_file = "/checkpoint/bkorbar/DATASET_TV/kinetics_val32frms_01_101.pth"
     if args.dataset == "ucf101":
         args.traindir = "/private/home/bkorbar/data/video/ucf101/data"
