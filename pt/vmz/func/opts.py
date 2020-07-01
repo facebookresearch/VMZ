@@ -97,8 +97,8 @@ def parse_args():
     parser.add_argument(
         "--pretrained",
         dest="pretrained",
+        default="",
         help="Use pre-trained models from the modelzoo",
-        action="store_true",
     )
 
     # Mixed precision training parameters

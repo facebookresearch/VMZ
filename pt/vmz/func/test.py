@@ -153,12 +153,13 @@ def test_main(args):
     criterion = nn.CrossEntropyLoss()
 
     # model pretrained or this
-    print(f"Loading the model from {args.resume_from_model}")
-    checkpoint = torch.load(args.resume_from_model, map_location="cpu")
-    if "model" in checkpoint.keys():
-        model_without_ddp.load_state_dict(checkpoint["model"])
-    else:
-        model_without_ddp.load_state_dict(checkpoint)
+    if not args.pretrained:
+        print(f"Loading the model from {args.resume_from_model}")
+        checkpoint = torch.load(args.resume_from_model, map_location="cpu")
+        if "model" in checkpoint.keys():
+            model_without_ddp.load_state_dict(checkpoint["model"])
+        else:
+            model_without_ddp.load_state_dict(checkpoint)
 
     print("Starting test_only")
     metric_logger = log.MetricLogger(delimiter="  ", writer=None, stat_set="val")
