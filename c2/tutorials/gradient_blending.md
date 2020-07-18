@@ -15,9 +15,9 @@ Gradient-Blending requires one additional classifier (decoder) for audio stream 
 
 We here provide a few example weights calculated by Gradient-Blending (for more details, see the original [paper](https://arxiv.org/abs/1905.12681)):
 
-| Dataset | Pre-Train | Model | Depth | Audio Weight | Visual Weight | AV Weight |
-| ----------- | ----------- | ------- | ----- | ----- | ----- | -----| ----- |
-| Kinetics400 | NA | R3D | 50 | 0.014 | 0.630 | 0.356 |
+| Dataset     | Pre-Train   | Model   | Depth | Audio Weight | Visual Weight | AV Weight |
+| ----------- | ----------- | ------- | ----- | -----        | -----         | -----|
+| Kinetics400 | N/A | R3D | 50 | 0.014 | 0.630 | 0.356 |
 | Kinetics400 | None | ip-CSN | 152 | 0.009 | 0.485 | 0.506 |
 | Kinetics400 | IG-65M | ip-CSN | 152 | 0.070 | 0.485 | 0.445 |
 | AudioSet | None | R(2+1)D | 101 | 0.239 | 0.384 | 0.377 |
