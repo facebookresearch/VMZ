@@ -36,3 +36,14 @@ The evaluation metrics are top-1 and top-5 video-level accuracy on Kinetics-400 
 | 32x224x224 | None | None | 77.8    | 92.8    | [link](https://www.dropbox.com/s/3fihu6ti60047mu/ipCSN_152_kinetics_from_scratch_f129594342.pkl?dl=0)   | 108.8 | 32.8 |
 | 32x224x224 | Sports1M | [link](https://www.dropbox.com/s/70di7o7qz6gjq6x/ipCSN_152_sports1m_from_scratch_f111018543.pkl?dl=0) | 78.8    | 93.5    | [link](https://www.dropbox.com/s/ir7cr0hda36knux/ipCSN_152_ft_kinetics_from_sports1m_f111279053.pkl?dl=0)      | 108.8 | 32.8 |
 | 32x224x224 | IG-65M | [link](https://www.dropbox.com/s/1ryvx8k7kzs8od6/ipCSN_152_ig65m_from_scratch_f130601052.pkl?dl=0) | 82.5    | 95.3    | [link](https://www.dropbox.com/s/zpp3p0vn2i7bibl/ipCSN_152_ft_kinetics_from_ig65m_f133090949.pkl?dl=0) | 108.8 | 32.8 |
+
+### Gradient-Blending: Audio-Visual Model: ip-CSN-152
+| Input size | Pre-trained dataset | Pre-trained model  | Video@1 | Video@5 | Finetuned model | GFLOPs |
+| -----------| ------------ | -- | ------- | ------- | -------- | ----- |
+| 32x224x224 | None | None | 79.1    | 93.9    | [link](https://www.dropbox.com/s/13d5jgq65nd5sn6/g_b_ip_csn_152_kinetics.pkl?dl=0)      | 110.1 | 
+| 32x224x224 | Sports1M+AudioSet | [link](https://www.dropbox.com/s/u4dgz0z09aaim9x/sports1m_audioset_ip_csn_152.pkl?dl=0) | 80.4    | 94.8    | [link](https://www.dropbox.com/s/ubcy09t8ghes9m7/g_b_ip_csn_152_sports_audioset_ft_kinetics.pkl?dl=0)      | 110.1 | 
+| 32x224x224 | IG-65M+AudioSet | [link](https://www.dropbox.com/s/bgxf62o9yzx7zfy/ig_audioset_ip_csn_152.pkl) | 83.3    | 96.0    | [link](https://www.dropbox.com/s/9ja3rlmr568qemt/g_b_ip_csn_152_ig_audioset_ft_kinetics.pkl?dl=0)      | 110.1 |
+
+We additionally provide two audio-visual models:
+- R(2+1)D-101 with 16x224x224 as input trained from scratch on AudioSet: [link](https://www.dropbox.com/s/7e36vogqyea152p/g_b_r2_plus_1d_101_audioset.pkl?dl=0)
+- ip-CSN-152 pretrained on IG-65M and ImageNet, which is used for our entry in EPIC-Kitchen Action Recognition Challenge: [link](https://www.dropbox.com/s/63oy0vn4gkyc3xq/ig_imagenet_ip_csn_152.pkl?dl=0)
