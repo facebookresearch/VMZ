@@ -26,6 +26,7 @@ log.setLevel(logging.INFO)
 
 from models import c3d_model
 from models import r3d_model
+from models import audio_visual_model
 
 from models.loss import loss_creator
 
@@ -36,6 +37,12 @@ video_models = [
     'rmc2', 'rmc3', 'rmc4', 'rmc5',
     'r3d', 'r2plus1d', 'c3d',
     'ir-csn', 'ip-csn',
+]
+
+av_joint_models = [
+    'av_resnet-r2plus1d', 'av_resnet-r3d',
+    'av_resnet-ir-csn', 'av_resnet-ip-csn',
+    'a_resnet',
 ]
 
 model_depths = [
@@ -52,7 +59,9 @@ def model_validation(
     if crop_size != 112 and crop_size != 224:
         log.info("Unsupported crop size...")
         return False
-    elif model_name not in video_models and model_name != 'c3d':
+    elif (model_name not in video_models
+            and model_name != 'c3d'
+            and model_name not in av_joint_models):
         log.info("Unsupported model name...")
         return False
     elif model_depth not in model_depths:
@@ -93,6 +102,12 @@ def build_model(
     conv1_temporal_kernel=3,
     use_convolutional_pred=False,
     use_pool1=False,
+    use_full_ft=True,
+    audio_input_3d=False,
+    g_blend=False,
+    audio_weight=0.0,
+    visual_weight=0.0,
+    av_weight=1.0,
 ):
     log.info('creating {}, depth={}...'.format(
         model_name,
@@ -128,18 +143,54 @@ def build_model(
             use_convolutional_pred=use_convolutional_pred,
             use_pool1=use_pool1,
         )
+    elif model_name in av_joint_models:
+        last_out = audio_visual_model.create_model(
+            model=model,
+            model_name=model_name,
+            model_depth=model_depth,
+            num_labels=num_labels,
+            num_channels=num_channels,
+            crop_size=crop_size,
+            clip_length=clip_length,
+            data=data,
+            is_test=is_test,
+            channel_multiplier=channel_multiplier,
+            bottleneck_multiplier=bottleneck_multiplier,
+            use_dropout=use_dropout,
+            conv1_temporal_stride=conv1_temporal_stride,
+            conv1_temporal_kernel=conv1_temporal_kernel,
+            use_convolutional_pred=use_convolutional_pred,
+            use_pool1=use_pool1,
+            use_full_ft=use_full_ft,
+            audio_input_3d=audio_input_3d,
+            g_blend=g_blend,
+        )
     else:
         # unlikely to happen if we have used model validation
         log.info("Unknown architecture...")
 
     # adding a loss
-    loss = loss_creator.add_loss(
-        model,
-        last_out,
-        multi_label,
-        use_convolutional_pred,
-        num_labels,
-        batch_size,
-        loss_scale
-    )
+    if g_blend:
+        loss = loss_creator.add_weighted_loss(
+            model,
+            last_out,
+            multi_label,
+            use_convolutional_pred,
+            num_labels,
+            batch_size,
+            loss_scale,
+            audio_weight=audio_weight,
+            visual_weight=visual_weight,
+            av_weight=av_weight,
+        )
+    else:
+        loss = loss_creator.add_loss(
+            model,
+            last_out,
+            multi_label,
+            use_convolutional_pred,
+            num_labels,
+            batch_size,
+            loss_scale,
+        )
     return [loss]
