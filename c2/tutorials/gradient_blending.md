@@ -5,7 +5,7 @@ This tutorial provides additional information on how to enable audio-visual lear
 ## Enable joint decoding of audio and visual
 Current Caffe2 package/ binary does not support decoding audio from video; to solve this problem, we provide a suite of audio decoding functionalities in the ```ops``` folder. Please copy the files to ```caffe2/video/``` and re-build the Caffe2 package. Note that no overriding of existing video decoding operators is required. 
 
-The ```AVInput``` operator provides temporally aligned video RGB clips and audio LogMels. Audio dimension by default is given by 100(time)x40(frequency). Alignment by default is perfect alignment with visual (both start and end of visual clip). Other options can be tuned inside ```av_input_op.h``` before compilation. 
+The ```AVInput``` operator provides temporally aligned video RGB clips and audio LogMels. Audio dimension by default is given by 100(time)x40(frequency). Alignment by default is perfect alignment with visual (both start and end of visual clip). Other options can be tuned inside ```av_input_op.h```. 
 
 ## Audio decoding option in train/ test/ feature extraction
 Audio decoding can be activated by changing parameter ```input_type``` in the workflows. Setting it to ```3``` gives decoding of both audio and visual. 
