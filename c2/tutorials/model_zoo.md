@@ -22,6 +22,12 @@ The evaluation metrics are top-1 and top-5 video-level accuracy on Kinetics-400 
 | 32x112x122 | Sports1M | [link](https://www.dropbox.com/s/w5cdqeyqukuaqt7/r2plus1d_152_sports1m_from_scratch_f127111290.pkl?dl=0)   | 79.5     | 94.0      | [link](https://www.dropbox.com/s/twvcpe30rxuaf45/r2plus1d_152_ft_kinetics_from_sports1m_f128957437.pkl?dl=0)   | 329.1 | 118.0 |
 | 32x112x112 | IG-65M | [link](https://www.dropbox.com/s/oqdg176p7nqc84v/r2plus1d_152_ig65m_from_scratch_f106380637.pkl?dl=0) | 81.6    | 95.3    | [link](https://www.dropbox.com/s/tmxuae8ubo5gipy/r2plus1d_152_ft_kinetics_from_ig65m_f107107466.pkl?dl=0)      | 329.1 | 118.0 |
 
+### ir-CSN-50
+| Input size | Pre-trained dataset | Pre-trained model  | Video@1 | Video@5 | Finetuned model | GFLOPs | params(M) |
+|------------| -----       | -------| ------- | ------- | -------   | -------| -----     |
+| 32x224x224 | None        | None   | TBD    | TBD    | link      | TBD   | TBD      |
+| 32x224x224  | IG-65M | [link](https://www.dropbox.com/s/1cqzndm1zobxvhh/irCSN_50_pretrained_ig65m_f231921860.pkl?dl=0)      | TBD       | TBD       | [link](https://www.dropbox.com/s/b6o2mvoqrvupatt/irCSN_50_ft_kinetics_from_ig65m_f233743920.pkl?dl=0)      | TBD | TBD |
+
 
 ### ir-CSN-152
 | Input size | Pre-trained dataset | Pre-trained model  | Video@1 | Video@5 | Finetuned model | GFLOPs | params(M) |
