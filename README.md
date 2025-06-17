@@ -1,8 +1,10 @@
 # VMZ: Model Zoo for Video Modeling
 
+**VMZ is no longer supported and this repository has been archived.**
+
 VMZ is a Caffe2 and Pytorch codebase for video modeling developed by the Computer Vision team at Facebook AI. The aim of this codebase is to help other researchers and industry practitioners:
-+ reproduce some of our research results and 
-+ leverage our very strong pre-trained models. 
++ reproduce some of our research results and
++ leverage our very strong pre-trained models.
 
 
 Currently, this codebase supports the following models:
@@ -19,6 +21,4 @@ Currently, this codebase supports the following models:
 
 
 ## Suporting Team
-This codebase is actively supported by Facebook AI computer vision: @CHJoanna, @weiyaowang, @hengcv, @deeptigp, @dutran, and community researchers @bjuncek (Quansight, Oxford VGG).
-
-
+This codebase was supported by Facebook AI computer vision: @CHJoanna, @weiyaowang, @hengcv, @deeptigp, @dutran, and community researchers @bjuncek (Quansight, Oxford VGG).
