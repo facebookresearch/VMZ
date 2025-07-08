@@ -1,0 +1,37 @@
+FROM nvidia/cuda:10.1-cudnn7-runtime
+
+WORKDIR /usr/src/app
+
+ENV LANG="C.UTF-8" LC_ALL="C.UTF-8" PIP_NO_CACHE_DIR="false" PYTHONPATH="/usr/src/app/lib"
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    python python-pip python-dev ffmpeg \
+    git gcc g++ build-essential cmake make pkg-config libatlas-base-dev gfortran unzip liblmdb-dev \
+    libgoogle-glog-dev \
+    libgtest-dev \
+    libiomp-dev \
+    libleveldb-dev \
+    liblmdb-dev \
+    libopencv-dev \
+    libopenmpi-dev \
+    libsnappy-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libgflags-dev \
+    && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+RUN python -m pip install pip==19.2.3 setuptools==41.2.0 pip-tools==4.1.0 && \
+    python -m piptools sync
+
+RUN git clone --recurse-submodules -j $(nproc) https://github.com/pytorch/pytorch.git && \
+    cd pytorch && \
+    git checkout 1eaa9f8 && \
+    git submodule update && \
+    USE_OPENCV=1 USE_FFMPEG=1 USE_LMDB=1 python setup.py install && \
+    cd .. && \
+    rm -rf pytorch
+
+COPY . .
